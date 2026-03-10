@@ -1,5 +1,6 @@
 package com.gestorrh.api.service;
 
+import com.gestorrh.api.dto.PeticionActualizarEmpleadoDTO;
 import com.gestorrh.api.dto.PeticionCrearEmpleadoDTO;
 import com.gestorrh.api.dto.RespuestaCrearEmpleadoDTO;
 import com.gestorrh.api.dto.RespuestaEmpleadoDTO;
@@ -13,6 +14,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -98,5 +100,108 @@ public class EmpleadoService {
                 .fechaBajaContrato(emp.getFechaBajaContrato())
                 .build()
         ).collect(Collectors.toList());
+    }
+
+    /**
+     * Actualiza los datos de un empleado, verificando que pertenezca a la empresa logueada.
+     */
+    @Transactional
+    public RespuestaEmpleadoDTO actualizarEmpleado(Long idEmpleado, PeticionActualizarEmpleadoDTO peticion) {
+
+        String correoEmpresaAuth = SecurityContextHolder.getContext().getAuthentication().getName();
+        Empresa empresaLogueada = empresaRepository.findByEmail(correoEmpresaAuth)
+                .orElseThrow(() -> new RuntimeException("Empresa no encontrada"));
+
+        Empleado empleado = empleadoRepository.findById(idEmpleado)
+                .orElseThrow(() -> new RuntimeException("Empleado no encontrado con ID: " + idEmpleado));
+
+        if (!empleado.getEmpresa().getIdEmpresa().equals(empresaLogueada.getIdEmpresa())) {
+            throw new RuntimeException("Acceso denegado: Este empleado no pertenece a tu empresa.");
+        }
+
+        // 4. Actualizamos los datos
+        empleado.setNombre(peticion.getNombre());
+        empleado.setApellidos(peticion.getApellidos());
+        empleado.setTelefono(peticion.getTelefono());
+        empleado.setPuesto(peticion.getPuesto());
+        empleado.setDepartamento(peticion.getDepartamento());
+        empleado.setRol(peticion.getRol());
+        empleado.setActivo(peticion.getActivo());
+
+        empleado = empleadoRepository.save(empleado);
+
+        return RespuestaEmpleadoDTO.builder()
+                .idEmpleado(empleado.getIdEmpleado())
+                .email(empleado.getEmail())
+                .nombre(empleado.getNombre())
+                .apellidos(empleado.getApellidos())
+                .telefono(empleado.getTelefono())
+                .puesto(empleado.getPuesto())
+                .departamento(empleado.getDepartamento())
+                .rol(empleado.getRol())
+                .activo(empleado.getActivo())
+                .fechaBajaContrato(empleado.getFechaBajaContrato())
+                .build();
+    }
+
+    /**
+     * Registra la baja de un empleado poniendo la fecha de hoy como fin de contrato.
+     */
+    @Transactional
+    public void darDeBajaEmpleado(Long idEmpleado, LocalDate fechaBaja) {
+        String correoEmpresaAuth = SecurityContextHolder.getContext().getAuthentication().getName();
+        Empresa empresaLogueada = empresaRepository.findByEmail(correoEmpresaAuth)
+                .orElseThrow(() -> new RuntimeException("Empresa no encontrada"));
+
+        Empleado empleado = empleadoRepository.findById(idEmpleado)
+                .orElseThrow(() -> new RuntimeException("Empleado no encontrado"));
+
+        if (!empleado.getEmpresa().getIdEmpresa().equals(empresaLogueada.getIdEmpresa())) {
+            throw new RuntimeException("No tienes permiso para dar de baja a este empleado");
+        }
+
+        empleado.setFechaBajaContrato(fechaBaja);
+        empleadoRepository.save(empleado);
+    }
+
+    /**
+     * Readmite a un empleado que estaba de baja, reseteando su fecha de fin de contrato
+     * y generándole una nueva contraseña de acceso.
+     */
+    @Transactional
+    public RespuestaCrearEmpleadoDTO readmitirEmpleado(Long idEmpleado) {
+
+        String correoEmpresaAuth = SecurityContextHolder.getContext().getAuthentication().getName();
+        Empresa empresaLogueada = empresaRepository.findByEmail(correoEmpresaAuth)
+                .orElseThrow(() -> new RuntimeException("Empresa no encontrada"));
+
+        Empleado empleado = empleadoRepository.findById(idEmpleado)
+                .orElseThrow(() -> new RuntimeException("Empleado no encontrado con ID: " + idEmpleado));
+
+        if (!empleado.getEmpresa().getIdEmpresa().equals(empresaLogueada.getIdEmpresa())) {
+            throw new RuntimeException("Acceso denegado: Este empleado no pertenece a tu empresa.");
+        }
+
+        if (empleado.getFechaBajaContrato() == null) {
+            throw new RuntimeException("El empleado ya está activo. No se puede readmitir a alguien que no está de baja.");
+        }
+
+        String nuevaContrasenaPlana = java.util.UUID.randomUUID().toString().substring(0, 8);
+        String contrasenaEncriptada = codificadorPassword.encode(nuevaContrasenaPlana);
+
+        empleado.setFechaBajaContrato(null);
+        empleado.setActivo(true);
+        empleado.setPassword(contrasenaEncriptada);
+
+        empleado = empleadoRepository.save(empleado);
+
+        return RespuestaCrearEmpleadoDTO.builder()
+                .idEmpleado(empleado.getIdEmpleado())
+                .nombre(empleado.getNombre())
+                .apellidos(empleado.getApellidos())
+                .email(empleado.getEmail())
+                .rol(empleado.getRol())
+                .passwordGenerada(nuevaContrasenaPlana)
+                .build();
     }
 }
