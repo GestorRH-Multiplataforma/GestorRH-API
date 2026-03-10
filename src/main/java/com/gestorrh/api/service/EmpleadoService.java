@@ -2,6 +2,7 @@ package com.gestorrh.api.service;
 
 import com.gestorrh.api.dto.PeticionCrearEmpleadoDTO;
 import com.gestorrh.api.dto.RespuestaCrearEmpleadoDTO;
+import com.gestorrh.api.dto.RespuestaEmpleadoDTO;
 import com.gestorrh.api.entity.Empleado;
 import com.gestorrh.api.entity.Empresa;
 import com.gestorrh.api.repository.EmpleadoRepository;
@@ -12,7 +13,9 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 /**
  * Servicio encargado de la lógica de negocio de los Empleados.
@@ -67,5 +70,33 @@ public class EmpleadoService {
                 .rol(nuevoEmpleado.getRol())
                 .passwordGenerada(contrasenaPlana)
                 .build();
+    }
+
+    /**
+     * Obtiene la lista de todos los empleados pertenecientes a la empresa autenticada.
+     */
+    @Transactional(readOnly = true)
+    public List<RespuestaEmpleadoDTO> obtenerEmpleadosDeEmpresa() {
+
+        String correoEmpresaAuth = SecurityContextHolder.getContext().getAuthentication().getName();
+
+        Empresa empresa = empresaRepository.findByEmail(correoEmpresaAuth)
+                .orElseThrow(() -> new RuntimeException("Empresa no encontrada"));
+
+        List<Empleado> empleados = empleadoRepository.findByEmpresaIdEmpresa(empresa.getIdEmpresa());
+
+        return empleados.stream().map(emp -> RespuestaEmpleadoDTO.builder()
+                .idEmpleado(emp.getIdEmpleado())
+                .email(emp.getEmail())
+                .nombre(emp.getNombre())
+                .apellidos(emp.getApellidos())
+                .telefono(emp.getTelefono())
+                .puesto(emp.getPuesto())
+                .departamento(emp.getDepartamento())
+                .rol(emp.getRol())
+                .activo(emp.getActivo())
+                .fechaBajaContrato(emp.getFechaBajaContrato())
+                .build()
+        ).collect(Collectors.toList());
     }
 }

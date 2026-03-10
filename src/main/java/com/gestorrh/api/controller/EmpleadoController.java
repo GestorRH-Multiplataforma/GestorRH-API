@@ -2,16 +2,16 @@ package com.gestorrh.api.controller;
 
 import com.gestorrh.api.dto.PeticionCrearEmpleadoDTO;
 import com.gestorrh.api.dto.RespuestaCrearEmpleadoDTO;
+import com.gestorrh.api.dto.RespuestaEmpleadoDTO;
 import com.gestorrh.api.service.EmpleadoService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 /**
  * Controlador REST para la gestión de Empleados.
@@ -37,5 +37,18 @@ public class EmpleadoController {
         RespuestaCrearEmpleadoDTO respuesta = empleadoService.crearEmpleado(peticion);
 
         return ResponseEntity.status(HttpStatus.CREATED).body(respuesta);
+    }
+
+    /**
+     * Endpoint para listar todos los empleados de la empresa logueada.
+     * SOLO accesible para usuarios con el rol EMPRESA.
+     * URL: GET http://localhost:8080/api/empleados
+     */
+    @GetMapping
+    @PreAuthorize("hasRole('EMPRESA')")
+    public ResponseEntity<List<RespuestaEmpleadoDTO>> listarEmpleados() {
+
+        List<RespuestaEmpleadoDTO> lista = empleadoService.obtenerEmpleadosDeEmpresa();
+        return ResponseEntity.ok(lista);
     }
 }
