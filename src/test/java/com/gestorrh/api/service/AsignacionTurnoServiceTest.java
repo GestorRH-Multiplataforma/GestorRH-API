@@ -1,12 +1,11 @@
 package com.gestorrh.api.service;
 
-import com.gestorrh.api.dto.PeticionAsignacionTurnoDTO;
-import com.gestorrh.api.dto.RespuestaAsignacionTurnoDTO;
+import com.gestorrh.api.dto.asignacionDTO.PeticionAsignacionTurnoDTO;
+import com.gestorrh.api.dto.asignacionDTO.RespuestaAsignacionTurnoDTO;
 import com.gestorrh.api.entity.*;
-import com.gestorrh.api.repository.AsignacionTurnoRepository;
-import com.gestorrh.api.repository.EmpleadoRepository;
-import com.gestorrh.api.repository.EmpresaRepository;
-import com.gestorrh.api.repository.TurnoRepository;
+import com.gestorrh.api.entity.enums.EstadoAusencia;
+import com.gestorrh.api.entity.enums.ModalidadTurno;
+import com.gestorrh.api.repository.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -40,6 +39,8 @@ class AsignacionTurnoServiceTest {
     private TurnoRepository turnoRepository;
     @Mock
     private EmpresaRepository empresaRepository;
+    @Mock
+    private AusenciaRepository ausenciaRepository;
 
     @InjectMocks
     private AsignacionTurnoService asignacionService;
@@ -68,6 +69,8 @@ class AsignacionTurnoServiceTest {
                 .horaFin(LocalTime.of(15, 0))
                 .descripcion("Mañana")
                 .build();
+        lenient().when(ausenciaRepository.tieneAusenciaAprobadaEnFecha(anyLong(), eq(EstadoAusencia.APROBADA), any()))
+                .thenReturn(false);
     }
 
     private void simularAutenticacion(String email, String rol) {
