@@ -2,6 +2,7 @@ package com.gestorrh.api.controller;
 
 import com.gestorrh.api.dto.asignacionDTO.PeticionAsignacionTurnoDTO;
 import com.gestorrh.api.dto.asignacionDTO.RespuestaAsignacionTurnoDTO;
+import com.gestorrh.api.entity.enums.ModalidadTurno;
 import com.gestorrh.api.service.AsignacionTurnoService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -10,6 +11,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -79,5 +81,15 @@ public class AsignacionTurnoController {
     public ResponseEntity<Void> eliminarAsignacion(@PathVariable("id") Long id) {
         asignacionService.eliminarAsignacion(id);
         return ResponseEntity.noContent().build();
+    }
+
+    /**
+     * Endpoint de diccionario para el Frontend: Obtiene las modalidades de turno.
+     * URL: GET http://localhost:8080/api/asignaciones/modalidades
+     */
+    @GetMapping("/modalidades")
+    @PreAuthorize("hasAnyRole('EMPRESA', 'EMPLEADO')")
+    public ResponseEntity<List<ModalidadTurno>> obtenerModalidades() {
+        return ResponseEntity.ok(Arrays.asList(ModalidadTurno.values()));
     }
 }

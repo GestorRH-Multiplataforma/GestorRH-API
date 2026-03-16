@@ -1,6 +1,7 @@
 package com.gestorrh.api.controller;
 
 import com.gestorrh.api.dto.empleadoDTO.*;
+import com.gestorrh.api.entity.enums.RolEmpleado;
 import com.gestorrh.api.service.EmpleadoService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -9,6 +10,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -115,5 +117,15 @@ public class EmpleadoController {
         empleadoService.cambiarMiContrasena(peticion);
 
         return ResponseEntity.noContent().build();
+    }
+
+    /**
+     * Endpoint de diccionario para el Frontend: Obtiene los roles disponibles.
+     * URL: GET http://localhost:8080/api/empleados/roles
+     */
+    @GetMapping("/roles")
+    @PreAuthorize("hasAnyRole('EMPRESA', 'EMPLEADO')")
+    public ResponseEntity<List<RolEmpleado>> obtenerRoles() {
+        return ResponseEntity.ok(Arrays.asList(RolEmpleado.values()));
     }
 }
