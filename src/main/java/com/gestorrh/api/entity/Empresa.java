@@ -9,6 +9,9 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  * Entidad que representa a la Empresa en la base de datos.
  * Actúa como el administrador global del sistema, gestionando empleados, turnos y ausencias.
@@ -57,4 +60,12 @@ public class Empresa {
 
     @Column(name = "radio_validez")
     private Integer radioValidez;
+
+    @Builder.Default
+    @OneToMany(mappedBy = "empresa", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Empleado> empleados = new ArrayList<>();
+
+    @Builder.Default
+    @OneToMany(mappedBy = "empresa", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Turno> turnos = new ArrayList<>();
 }

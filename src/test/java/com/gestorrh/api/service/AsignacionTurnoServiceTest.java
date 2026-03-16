@@ -52,8 +52,12 @@ class AsignacionTurnoServiceTest {
 
     @BeforeEach
     void setUp() {
-        empresaPrueba = new Empresa();
-        empresaPrueba.setIdEmpresa(1L);
+        empresaPrueba = Empresa.builder()
+                .idEmpresa(1L)
+                .latitudSede(40.4168)
+                .longitudSede(-3.7038)
+                .radioValidez(100)
+                .build();
 
         empleadoDestino = Empleado.builder()
                 .idEmpleado(10L)
@@ -69,6 +73,7 @@ class AsignacionTurnoServiceTest {
                 .horaFin(LocalTime.of(15, 0))
                 .descripcion("Mañana")
                 .build();
+
         lenient().when(ausenciaRepository.tieneAusenciaAprobadaEnFecha(anyLong(), eq(EstadoAusencia.APROBADA), any()))
                 .thenReturn(false);
     }
