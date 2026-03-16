@@ -86,4 +86,8 @@ public class Empleado {
     @Builder.Default
     @OneToMany(mappedBy = "empleado", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<AsignacionTurno> asignaciones = new ArrayList<>();
+
+    @Builder.Default
+    @OneToMany(mappedBy = "empleado", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Fichaje> fichajes = new ArrayList<>();
 }
