@@ -138,7 +138,6 @@ class EmpleadoServiceTest {
         PeticionActualizarEmpleadoDTO peticion = PeticionActualizarEmpleadoDTO.builder()
                 .nombre("Ana Modificada")
                 .puesto("Manager")
-                .activo(true)
                 .build();
 
         Empleado empleadoEnBd = Empleado.builder()

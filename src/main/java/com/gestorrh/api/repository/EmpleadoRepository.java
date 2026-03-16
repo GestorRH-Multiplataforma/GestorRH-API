@@ -2,7 +2,10 @@ package com.gestorrh.api.repository;
 
 import com.gestorrh.api.entity.Empleado;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
@@ -27,4 +30,9 @@ public interface EmpleadoRepository extends JpaRepository<Empleado, Long> {
      * @return Lista de empleados de esa empresa.
      */
     List<Empleado> findByEmpresaIdEmpresa(Long idEmpresa);
+
+    @Transactional
+    @Modifying
+    @Query("UPDATE Empleado e SET e.activo = false WHERE e.activo = true AND e.fechaBajaContrato IS NOT NULL AND e.fechaBajaContrato <= CURRENT_DATE")
+    int desactivarEmpleadosConContratoExpirado();
 }

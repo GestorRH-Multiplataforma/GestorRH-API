@@ -84,19 +84,25 @@ public class EmpleadoService {
 
         List<Empleado> empleados = empleadoRepository.findByEmpresaIdEmpresa(empresa.getIdEmpresa());
 
-        return empleados.stream().map(emp -> RespuestaEmpleadoDTO.builder()
-                .idEmpleado(emp.getIdEmpleado())
-                .email(emp.getEmail())
-                .nombre(emp.getNombre())
-                .apellidos(emp.getApellidos())
-                .telefono(emp.getTelefono())
-                .puesto(emp.getPuesto())
-                .departamento(emp.getDepartamento())
-                .rol(emp.getRol())
-                .activo(emp.getActivo())
-                .fechaBajaContrato(emp.getFechaBajaContrato())
-                .build()
-        ).collect(Collectors.toList());
+
+
+        return empleados.stream().map(emp -> {
+            boolean esRealmenteActivo = emp.getActivo() &&
+                    (emp.getFechaBajaContrato() == null || emp.getFechaBajaContrato().isAfter(LocalDate.now()));
+
+            return RespuestaEmpleadoDTO.builder()
+                    .idEmpleado(emp.getIdEmpleado())
+                    .email(emp.getEmail())
+                    .nombre(emp.getNombre())
+                    .apellidos(emp.getApellidos())
+                    .telefono(emp.getTelefono())
+                    .puesto(emp.getPuesto())
+                    .departamento(emp.getDepartamento())
+                    .rol(emp.getRol())
+                    .activo(emp.getActivo())
+                    .fechaBajaContrato(emp.getFechaBajaContrato())
+                    .build();
+        }).collect(Collectors.toList());
     }
 
     /**
@@ -116,16 +122,17 @@ public class EmpleadoService {
             throw new RuntimeException("Acceso denegado: Este empleado no pertenece a tu empresa.");
         }
 
-        // 4. Actualizamos los datos
         empleado.setNombre(peticion.getNombre());
         empleado.setApellidos(peticion.getApellidos());
         empleado.setTelefono(peticion.getTelefono());
         empleado.setPuesto(peticion.getPuesto());
         empleado.setDepartamento(peticion.getDepartamento());
         empleado.setRol(peticion.getRol());
-        empleado.setActivo(peticion.getActivo());
 
         empleado = empleadoRepository.save(empleado);
+
+        boolean esRealmenteActivo = empleado.getActivo() &&
+                (empleado.getFechaBajaContrato() == null || empleado.getFechaBajaContrato().isAfter(LocalDate.now()));
 
         return RespuestaEmpleadoDTO.builder()
                 .idEmpleado(empleado.getIdEmpleado())
@@ -136,7 +143,7 @@ public class EmpleadoService {
                 .puesto(empleado.getPuesto())
                 .departamento(empleado.getDepartamento())
                 .rol(empleado.getRol())
-                .activo(empleado.getActivo())
+                .activo(esRealmenteActivo)
                 .fechaBajaContrato(empleado.getFechaBajaContrato())
                 .build();
     }
@@ -158,6 +165,11 @@ public class EmpleadoService {
         }
 
         empleado.setFechaBajaContrato(fechaBaja);
+
+        if (!fechaBaja.isAfter(LocalDate.now())) {
+            empleado.setActivo(false);
+        }
+
         empleadoRepository.save(empleado);
     }
 
@@ -213,6 +225,9 @@ public class EmpleadoService {
         Empleado empleado = empleadoRepository.findByEmail(correoEmpleadoAuth)
                 .orElseThrow(() -> new RuntimeException("Error crítico: Empleado no encontrado en el sistema"));
 
+        boolean esRealmenteActivo = empleado.getActivo() &&
+                (empleado.getFechaBajaContrato() == null || empleado.getFechaBajaContrato().isAfter(LocalDate.now()));
+
         return RespuestaEmpleadoDTO.builder()
                 .idEmpleado(empleado.getIdEmpleado())
                 .email(empleado.getEmail())
@@ -222,7 +237,7 @@ public class EmpleadoService {
                 .puesto(empleado.getPuesto())
                 .departamento(empleado.getDepartamento())
                 .rol(empleado.getRol())
-                .activo(empleado.getActivo())
+                .activo(esRealmenteActivo)
                 .fechaBajaContrato(empleado.getFechaBajaContrato())
                 .build();
     }
