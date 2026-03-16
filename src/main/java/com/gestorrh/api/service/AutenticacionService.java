@@ -64,8 +64,10 @@ public class AutenticacionService {
             throw new RuntimeException("Credenciales inválidas");
         }
 
-        if (empleado.getFechaBajaContrato() != null && !empleado.getFechaBajaContrato().isAfter(java.time.LocalDate.now())) {
-            throw new RuntimeException("Acceso denegado: Su contrato con la empresa ha finalizado.");
+        boolean contratoExpirado = empleado.getFechaBajaContrato() != null && !empleado.getFechaBajaContrato().isAfter(java.time.LocalDate.now());
+
+        if (!empleado.getActivo() || contratoExpirado) {
+            throw new RuntimeException("Acceso denegado: Su relación laboral con la empresa ha finalizado.");
         }
         
         Map<String, Object> datosExtra = new HashMap<>();

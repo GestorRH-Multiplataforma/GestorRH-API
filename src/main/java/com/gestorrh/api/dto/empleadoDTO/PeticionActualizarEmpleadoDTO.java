@@ -26,7 +26,4 @@ public class PeticionActualizarEmpleadoDTO {
 
     @NotNull(message = "El rol es obligatorio")
     private RolEmpleado rol;
-
-    @NotNull(message = "El estado (activo/inactivo) es obligatorio")
-    private Boolean activo;
 }
