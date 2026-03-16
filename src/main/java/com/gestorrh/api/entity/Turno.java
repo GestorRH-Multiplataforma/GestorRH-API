@@ -10,6 +10,8 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.time.LocalTime;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Entidad que representa los tipos de turno (Catálogo) configurados por una Empresa.
@@ -45,4 +47,8 @@ public class Turno {
     @NotNull(message = "La hora de fin es obligatoria")
     @Column(name = "hora_fin", nullable = false)
     private LocalTime horaFin;
+
+    @Builder.Default
+    @OneToMany(mappedBy = "turno", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<AsignacionTurno> asignaciones = new ArrayList<>();
 }

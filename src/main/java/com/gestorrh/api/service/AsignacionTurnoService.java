@@ -40,6 +40,8 @@ public class AsignacionTurnoService {
         Empleado empleadoDestino = empleadoRepository.findById(peticion.getIdEmpleado())
                 .orElseThrow(() -> new RuntimeException("Empleado no encontrado"));
 
+        validarSedeConfigurada(empleadoDestino.getEmpresa());
+
         Turno turno = turnoRepository.findById(peticion.getIdTurno())
                 .orElseThrow(() -> new RuntimeException("Turno no encontrado"));
 
@@ -230,5 +232,11 @@ public class AsignacionTurnoService {
                 .fechaCambio(asig.getFechaCambio())
                 .responsableCambio(asig.getResponsableCambio())
                 .build();
+    }
+
+    private void validarSedeConfigurada(com.gestorrh.api.entity.Empresa empresa) {
+        if (empresa.getLatitudSede() == null || empresa.getLongitudSede() == null || empresa.getRadioValidez() == null) {
+            throw new RuntimeException("Operación denegada: La empresa debe configurar la ubicación de su sede (latitud, longitud y radio) en su perfil antes de poder asignar turnos a los empleados.");
+        }
     }
 }

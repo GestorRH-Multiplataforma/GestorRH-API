@@ -11,6 +11,9 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  * Entidad que representa a la Plantilla (Empleado/Supervisor) en la base de datos.
  * Usuarios operativos que usarán la App Móvil.
@@ -75,4 +78,12 @@ public class Empleado {
 
     @Column(name = "fecha_baja_contrato")
     private java.time.LocalDate fechaBajaContrato;
+
+    @Builder.Default
+    @OneToMany(mappedBy = "empleado", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Ausencia> ausencias = new ArrayList<>();
+
+    @Builder.Default
+    @OneToMany(mappedBy = "empleado", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<AsignacionTurno> asignaciones = new ArrayList<>();
 }
