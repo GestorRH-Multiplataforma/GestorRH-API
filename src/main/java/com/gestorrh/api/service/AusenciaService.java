@@ -29,14 +29,20 @@ public class AusenciaService {
     private final EmpleadoRepository empleadoRepository;
     private final EmpresaRepository empresaRepository;
     private final AsignacionTurnoRepository asignacionRepository;
+    private final FileStorageService fileStorageService;
 
     // MÉTODOS DEL EMPLEADO
 
     @Transactional
-    public RespuestaAusenciaDTO crearAusencia(PeticionAusenciaDTO peticion) {
+    public RespuestaAusenciaDTO crearAusencia(PeticionAusenciaDTO peticion, org.springframework.web.multipart.MultipartFile archivo) {
         Empleado empleadoLogueado = obtenerEmpleadoAutenticado();
         validarFechas(peticion.getFechaInicio(), peticion.getFechaFin());
         validarSolapamientoAusencias(empleadoLogueado.getIdEmpleado(), peticion.getFechaInicio(), peticion.getFechaFin(), null);
+
+        String nombreArchivoGenerado = null;
+        if (archivo != null && !archivo.isEmpty()) {
+            nombreArchivoGenerado = fileStorageService.guardarArchivo(archivo);
+        }
 
         Ausencia nuevaAusencia = Ausencia.builder()
                 .empleado(empleadoLogueado)
@@ -44,7 +50,7 @@ public class AusenciaService {
                 .descripcion(peticion.getDescripcion())
                 .fechaInicio(peticion.getFechaInicio())
                 .fechaFin(peticion.getFechaFin())
-                .justificante(peticion.getJustificante())
+                .justificante(nombreArchivoGenerado)
                 .estado(EstadoAusencia.SOLICITADA)
                 .build();
 
@@ -67,7 +73,7 @@ public class AusenciaService {
     }
 
     @Transactional
-    public RespuestaAusenciaDTO actualizarMiAusencia(Long idAusencia, PeticionAusenciaDTO peticion) {
+    public RespuestaAusenciaDTO actualizarMiAusencia(Long idAusencia, PeticionAusenciaDTO peticion, org.springframework.web.multipart.MultipartFile archivoNuevo) {
         Empleado empleadoLogueado = obtenerEmpleadoAutenticado();
         Ausencia ausencia = obtenerAusenciaPropia(idAusencia, empleadoLogueado);
 
@@ -78,11 +84,18 @@ public class AusenciaService {
         validarFechas(peticion.getFechaInicio(), peticion.getFechaFin());
         validarSolapamientoAusencias(empleadoLogueado.getIdEmpleado(), peticion.getFechaInicio(), peticion.getFechaFin(), idAusencia);
 
+        if (archivoNuevo != null && !archivoNuevo.isEmpty()) {
+            if (ausencia.getJustificante() != null) {
+                fileStorageService.eliminarArchivo(ausencia.getJustificante());
+            }
+            String nombreArchivoGenerado = fileStorageService.guardarArchivo(archivoNuevo);
+            ausencia.setJustificante(nombreArchivoGenerado);
+        }
+
         ausencia.setTipo(peticion.getTipo());
         ausencia.setDescripcion(peticion.getDescripcion());
         ausencia.setFechaInicio(peticion.getFechaInicio());
         ausencia.setFechaFin(peticion.getFechaFin());
-        ausencia.setJustificante(peticion.getJustificante());
 
         ausencia = ausenciaRepository.save(ausencia);
         return mapearARespuesta(ausencia);
@@ -95,6 +108,10 @@ public class AusenciaService {
 
         if (ausencia.getEstado() != EstadoAusencia.SOLICITADA) {
             throw new RuntimeException("Solo puedes cancelar una ausencia que esté en estado SOLICITADA.");
+        }
+
+        if (ausencia.getJustificante() != null) {
+            fileStorageService.eliminarArchivo(ausencia.getJustificante());
         }
 
         ausenciaRepository.delete(ausencia);

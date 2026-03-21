@@ -27,6 +27,4 @@ public class PeticionAusenciaDTO {
 
     @NotNull(message = "La fecha de fin es obligatoria")
     private LocalDate fechaFin;
-
-    private String justificante; // Opcional por ahora, será un String simulando la URL
 }
