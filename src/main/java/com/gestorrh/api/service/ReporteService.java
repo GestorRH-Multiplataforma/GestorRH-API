@@ -19,6 +19,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -37,6 +38,10 @@ public class ReporteService {
 
     @Transactional(readOnly = true)
     public List<ReporteDetalleDTO> obtenerReporteDetallado(LocalDate fechaInicio, LocalDate fechaFin, Long idEmpleadoFiltro) {
+        if (fechaInicio.isAfter(fechaFin)) {
+            throw new RuntimeException("Error: La fecha de inicio no puede ser posterior a la fecha de fin.");
+        }
+
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         String emailAuth = auth.getName();
         boolean esEmpresa = auth.getAuthorities().stream()
@@ -73,9 +78,15 @@ public class ReporteService {
             }
         }
 
+        if (fichajes.isEmpty()) {
+            throw new RuntimeException("No hay datos de fichajes para el rango de fechas seleccionado.");
+        }
+
         return fichajes.stream()
                 .filter(f -> f.getHoraSalida() != null)
                 .map(this::calcularFichaje)
+                .sorted(Comparator.comparing(ReporteDetalleDTO::getNombreEmpleado)
+                        .thenComparing(ReporteDetalleDTO::getFecha))
                 .collect(Collectors.toList());
     }
 
@@ -101,6 +112,7 @@ public class ReporteService {
                             .totalMinutosExtra(listaFichajesEmpleado.stream().mapToLong(ReporteDetalleDTO::getMinutosExtra).sum())
                             .build();
                 })
+                .sorted(Comparator.comparing(ReporteResumenDTO::getNombreEmpleado))
                 .collect(Collectors.toList());
     }
 
