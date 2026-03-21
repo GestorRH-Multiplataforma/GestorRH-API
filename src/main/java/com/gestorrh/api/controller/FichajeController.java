@@ -50,4 +50,19 @@ public class FichajeController {
         List<RespuestaFichajeDTO> historial = fichajeService.consultarFichajes(fechaInicio, fechaFin, empleadoId);
         return ResponseEntity.ok(historial);
     }
+
+    /**
+     * Permite a un Supervisor o Empresa modificar la hora de entrada/salida de un fichaje.
+     * Deja un rastro de auditoría en el campo incidencias.
+     * URL: PUT http://localhost:8080/api/fichajes/1/modificar
+     */
+    @PutMapping("/{idFichaje}/modificar")
+    @PreAuthorize("hasAnyRole('EMPRESA', 'SUPERVISOR')")
+    public ResponseEntity<RespuestaFichajeDTO> modificarFichajeManual(
+            @PathVariable Long idFichaje,
+            @Valid @RequestBody com.gestorrh.api.dto.fichajeDTO.PeticionModificacionFichajeDTO peticion) {
+
+        RespuestaFichajeDTO respuesta = fichajeService.modificarFichajeManual(idFichaje, peticion);
+        return ResponseEntity.ok(respuesta);
+    }
 }

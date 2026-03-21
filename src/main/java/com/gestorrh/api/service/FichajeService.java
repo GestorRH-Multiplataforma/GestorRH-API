@@ -2,6 +2,7 @@ package com.gestorrh.api.service;
 
 import com.gestorrh.api.dto.fichajeDTO.PeticionFichajeEntradaDTO;
 import com.gestorrh.api.dto.fichajeDTO.PeticionFichajeSalidaDTO;
+import com.gestorrh.api.dto.fichajeDTO.PeticionModificacionFichajeDTO;
 import com.gestorrh.api.dto.fichajeDTO.RespuestaFichajeDTO;
 import com.gestorrh.api.entity.AsignacionTurno;
 import com.gestorrh.api.entity.Empleado;
@@ -109,7 +110,8 @@ public class FichajeService {
 
         if (fichajeAbierto.getAsignacion() != null) {
             LocalDateTime horaFinTurno = hoy.atTime(fichajeAbierto.getAsignacion().getTurno().getHoraFin());
-            if (ahora.isBefore(horaFinTurno)) {
+
+            if (ahora.isBefore(horaFinTurno.minusMinutes(MINUTOS_CORTESIA))) {
                 String nuevaIncidencia = "Salida anticipada a las " + ahora.toLocalTime() + ". ";
                 String incidenciasPrevias = fichajeAbierto.getIncidencias() == null ? "" : fichajeAbierto.getIncidencias() + " | ";
                 fichajeAbierto.setIncidencias(incidenciasPrevias + nuevaIncidencia);
@@ -163,6 +165,57 @@ public class FichajeService {
         }
 
         return fichajes.stream().map(this::mapearARespuesta).collect(Collectors.toList());
+    }
+
+    @Transactional
+    public RespuestaFichajeDTO modificarFichajeManual(Long idFichaje, PeticionModificacionFichajeDTO peticion) {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        String emailAuth = auth.getName();
+        boolean esEmpresa = auth.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_EMPRESA"));
+
+        Fichaje fichaje = fichajeRepository.findById(idFichaje)
+                .orElseThrow(() -> new RuntimeException("Fichaje no encontrado"));
+
+        if (esEmpresa) {
+            Empresa empresa = empresaRepository.findByEmail(emailAuth).orElseThrow();
+            if (!fichaje.getEmpleado().getEmpresa().getIdEmpresa().equals(empresa.getIdEmpresa())) {
+                throw new RuntimeException("Acceso denegado: El fichaje pertenece a otra empresa.");
+            }
+        } else {
+            Empleado supervisor = empleadoRepository.findByEmail(emailAuth).orElseThrow();
+
+            if (fichaje.getEmpleado().getIdEmpleado().equals(supervisor.getIdEmpleado())) {
+                throw new RuntimeException("Conflicto de intereses: Como supervisor no puedes modificar tus propios fichajes. Debe hacerlo la empresa u otro supervisor.");
+            }
+
+            if (!fichaje.getEmpleado().getEmpresa().getIdEmpresa().equals(supervisor.getEmpresa().getIdEmpresa()) ||
+                    !fichaje.getEmpleado().getDepartamento().equalsIgnoreCase(supervisor.getDepartamento())) {
+                throw new RuntimeException("Acceso denegado: Solo puedes modificar fichajes de los empleados de tu departamento.");
+            }
+        }
+
+        if (peticion.getNuevaHoraEntrada() == null && peticion.getNuevaHoraSalida() == null) {
+            throw new RuntimeException("Debes proporcionar al menos una nueva hora de entrada o de salida para modificar el fichaje.");
+        }
+
+        if (peticion.getNuevaHoraEntrada() != null) {
+            fichaje.setHoraEntrada(peticion.getNuevaHoraEntrada());
+        }
+        if (peticion.getNuevaHoraSalida() != null) {
+            fichaje.setHoraSalida(peticion.getNuevaHoraSalida());
+        }
+
+        String marcaAuditoria = String.format(" | [MODIFICADO MANUALMENTE por %s. Motivo: %s]", emailAuth, peticion.getMotivoModificacion());
+        String incidenciasActuales = fichaje.getIncidencias() == null ? "" : fichaje.getIncidencias();
+
+        if (incidenciasActuales.isEmpty()) {
+            fichaje.setIncidencias(marcaAuditoria.replace(" | ", "").trim());
+        } else {
+            fichaje.setIncidencias(incidenciasActuales + marcaAuditoria);
+        }
+
+        fichaje = fichajeRepository.save(fichaje);
+        return mapearARespuesta(fichaje);
     }
 
     // MÉTODOS PRIVADOS
