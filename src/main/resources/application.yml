@@ -3,9 +3,18 @@ spring:
     name: GestorRH-API
   profiles:
     active: dev
+  # CONFIGURACIÓN DE SUBIDA DE ARCHIVOS
+  servlet:
+    multipart:
+      max-file-size: 5MB
+      max-request-size: 5MB
 
 server:
   port: 8080
+
+# RUTA RELATIVA PARA JUSTIFICANTES
+file:
+  upload-dir: uploads/ausencias
 
 # CONFIGURACIÓN DE SEGURIDAD (JWT). Si se lleva a produccion hay que quitar esta clave de aqui
 jwt:

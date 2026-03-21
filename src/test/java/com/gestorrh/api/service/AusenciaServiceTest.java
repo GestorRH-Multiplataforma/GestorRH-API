@@ -43,6 +43,10 @@ class AusenciaServiceTest {
     @Mock
     private AsignacionTurnoRepository asignacionRepository;
 
+    // NUEVO MOCK: Necesario porque AusenciaService ahora depende de él
+    @Mock
+    private FileStorageService fileStorageService;
+
     @InjectMocks
     private AusenciaService ausenciaService;
 
@@ -92,7 +96,7 @@ class AusenciaServiceTest {
         when(ausenciaRepository.findAusenciasSolapadas(eq(10L), anyList(), any(), any()))
                 .thenReturn(List.of(ausenciaSolapada));
 
-        RuntimeException ex = assertThrows(RuntimeException.class, () -> ausenciaService.crearAusencia(peticion));
+        RuntimeException ex = assertThrows(RuntimeException.class, () -> ausenciaService.crearAusencia(peticion, null));
         assertTrue(ex.getMessage().contains("ya tienes otra solicitud"));
     }
 
@@ -109,7 +113,7 @@ class AusenciaServiceTest {
 
         PeticionAusenciaDTO peticion = new PeticionAusenciaDTO();
 
-        RuntimeException ex = assertThrows(RuntimeException.class, () -> ausenciaService.actualizarMiAusencia(1L, peticion));
+        RuntimeException ex = assertThrows(RuntimeException.class, () -> ausenciaService.actualizarMiAusencia(1L, peticion, null));
         assertTrue(ex.getMessage().contains("Solo puedes modificar una ausencia que esté en estado SOLICITADA"));
     }
 

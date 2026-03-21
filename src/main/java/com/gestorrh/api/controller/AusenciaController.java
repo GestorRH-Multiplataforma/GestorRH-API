@@ -6,12 +6,17 @@ import com.gestorrh.api.dto.ausenciaDTO.RespuestaAusenciaDTO;
 import com.gestorrh.api.entity.enums.EstadoAusencia;
 import com.gestorrh.api.entity.enums.TipoAusencia;
 import com.gestorrh.api.service.AusenciaService;
+import com.gestorrh.api.service.FileStorageService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.core.io.Resource;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.Arrays;
 import java.util.List;
@@ -25,6 +30,7 @@ import java.util.List;
 public class AusenciaController {
 
     private final AusenciaService ausenciaService;
+    private final FileStorageService fileStorageService;
 
     // ENDPOINTS DE DICCIONARIO
 
@@ -42,10 +48,12 @@ public class AusenciaController {
 
     // ENDPOINTS DEL EMPLEADO
 
-    @PostMapping
+    @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @PreAuthorize("hasRole('EMPLEADO')")
-    public ResponseEntity<RespuestaAusenciaDTO> crearAusencia(@Valid @RequestBody PeticionAusenciaDTO peticion) {
-        RespuestaAusenciaDTO respuesta = ausenciaService.crearAusencia(peticion);
+    public ResponseEntity<RespuestaAusenciaDTO> crearAusencia(
+            @RequestPart("datos") @Valid PeticionAusenciaDTO peticion,
+            @RequestPart(value = "archivo", required = false) MultipartFile archivo) {
+        RespuestaAusenciaDTO respuesta = ausenciaService.crearAusencia(peticion, archivo);
         return ResponseEntity.status(HttpStatus.CREATED).body(respuesta);
     }
 
@@ -57,12 +65,13 @@ public class AusenciaController {
         return ResponseEntity.ok(lista);
     }
 
-    @PutMapping("/{id}")
+    @PutMapping(value = "/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @PreAuthorize("hasRole('EMPLEADO')")
     public ResponseEntity<RespuestaAusenciaDTO> actualizarMiAusencia(
             @PathVariable("id") Long id,
-            @Valid @RequestBody PeticionAusenciaDTO peticion) {
-        RespuestaAusenciaDTO respuesta = ausenciaService.actualizarMiAusencia(id, peticion);
+            @RequestPart("datos") @Valid PeticionAusenciaDTO peticion,
+            @RequestPart(value = "archivo", required = false) MultipartFile archivo) {
+        RespuestaAusenciaDTO respuesta = ausenciaService.actualizarMiAusencia(id, peticion, archivo);
         return ResponseEntity.ok(respuesta);
     }
 
@@ -90,5 +99,14 @@ public class AusenciaController {
             @Valid @RequestBody PeticionRevisionAusenciaDTO peticion) {
         RespuestaAusenciaDTO respuesta = ausenciaService.revisarAusencia(id, peticion);
         return ResponseEntity.ok(respuesta);
+    }
+
+    @GetMapping("/justificantes/{nombreArchivo}")
+    @PreAuthorize("hasAnyRole('EMPRESA', 'SUPERVISOR', 'EMPLEADO')")
+    public ResponseEntity<Resource> descargarJustificante(@PathVariable String nombreArchivo) {
+        Resource resource = fileStorageService.cargarArchivoComoRecurso(nombreArchivo);
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + resource.getFilename() + "\"")
+                .body(resource);
     }
 }
