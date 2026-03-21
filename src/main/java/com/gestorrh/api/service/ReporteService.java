@@ -16,6 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
@@ -121,7 +122,16 @@ public class ReporteService {
                 minutosTeoricos += 24 * 60;
             }
 
-            long diferencia = minutosTotales - minutosTeoricos;
+            long minutosTotalesEfectivos = minutosTotales;
+            LocalDateTime fechaHoraInicioTurno = f.getFecha().atTime(inicioTurno);
+
+            if (f.getHoraEntrada().isBefore(fechaHoraInicioTurno)) {
+                long minutosTemprano = Duration.between(f.getHoraEntrada(), fechaHoraInicioTurno).toMinutes();
+                minutosTotalesEfectivos -= minutosTemprano;
+            }
+
+            long diferencia = minutosTotalesEfectivos - minutosTeoricos;
+
             if (diferencia > MINUTOS_CORTESIA) {
                 minutosExtra = diferencia;
             }
