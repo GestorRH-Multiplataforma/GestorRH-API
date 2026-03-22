@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDate;
 import java.util.List;
 
 @Repository
@@ -21,7 +22,10 @@ public interface AusenciaRepository extends JpaRepository<Ausencia, Long> {
     List<Ausencia> findByEmpleadoIdEmpleado(Long idEmpleado);
     List<Ausencia> findByEmpleadoIdEmpleadoAndEstado(Long idEmpleado, EstadoAusencia estado);
 
-    @Query("SELECT COUNT(a) > 0 FROM Ausencia a WHERE a.empleado.idEmpleado = :idEmpleado AND a.estado = :estado AND :fecha BETWEEN a.fechaInicio AND a.fechaFin")
+    @Query("SELECT COUNT(a) > 0 FROM Ausencia a " +
+            "WHERE a.empleado.idEmpleado = :idEmpleado " +
+            "AND a.estado = :estado " +
+            "AND :fecha BETWEEN a.fechaInicio AND a.fechaFin")
     boolean tieneAusenciaAprobadaEnFecha(
             @Param("idEmpleado") Long idEmpleado,
             @Param("estado") EstadoAusencia estado,
@@ -37,4 +41,24 @@ public interface AusenciaRepository extends JpaRepository<Ausencia, Long> {
             @org.springframework.data.repository.query.Param("fechaInicio") java.time.LocalDate fechaInicio,
             @org.springframework.data.repository.query.Param("fechaFin") java.time.LocalDate fechaFin
     );
+
+    @Query("SELECT a.tipo, COUNT(a) " +
+            "FROM Ausencia a " +
+            "WHERE a.empleado.empresa.idEmpresa = :idEmpresa " +
+            "AND a.estado = 'APROBADA' " +
+            "GROUP BY a.tipo")
+    List<Object[]> contarAusenciasAprobadasPorTipo(@Param("idEmpresa") Long idEmpresa);
+
+    @Query("SELECT a.estado, COUNT(a) " +
+            "FROM Ausencia a " +
+            "WHERE a.empleado.empresa.idEmpresa = :idEmpresa " +
+            "GROUP BY a.estado")
+    List<Object[]> contarAusenciasPorEstado(@Param("idEmpresa") Long idEmpresa);
+
+    @Query("SELECT COUNT(DISTINCT a.empleado.idEmpleado) " +
+            "FROM Ausencia a " +
+            "WHERE a.empleado.empresa.idEmpresa = :idEmpresa " +
+            "AND a.estado = 'APROBADA' " +
+            "AND :fechaHoy BETWEEN a.fechaInicio AND a.fechaFin")
+    Long contarEmpleadosAusentesHoy(@Param("idEmpresa") Long idEmpresa, @Param("fechaHoy") LocalDate fechaHoy);
 }

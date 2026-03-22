@@ -1,9 +1,11 @@
 package com.gestorrh.api.repository;
 
+import com.gestorrh.api.dto.estadisticasDTO.DatoGraficoDTO;
 import com.gestorrh.api.entity.Empleado;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -35,4 +37,16 @@ public interface EmpleadoRepository extends JpaRepository<Empleado, Long> {
     @Modifying
     @Query("UPDATE Empleado e SET e.activo = false WHERE e.activo = true AND e.fechaBajaContrato IS NOT NULL AND e.fechaBajaContrato <= CURRENT_DATE")
     int desactivarEmpleadosConContratoExpirado();
+
+    @Query("SELECT new DatoGraficoDTO(COALESCE(e.departamento, 'Sin asignar'), COUNT(e)) " +
+            "FROM Empleado e " +
+            "WHERE e.empresa.idEmpresa = :idEmpresa " +
+            "GROUP BY e.departamento")
+    List<DatoGraficoDTO> contarEmpleadosPorDepartamento(@Param("idEmpresa") Long idEmpresa);
+
+    @Query("SELECT COUNT(e) " +
+            "FROM Empleado e " +
+            "WHERE e.empresa.idEmpresa = :idEmpresa " +
+            "AND e.activo = true")
+    Long contarTotalEmpleadosActivos(@Param("idEmpresa") Long idEmpresa);
 }
