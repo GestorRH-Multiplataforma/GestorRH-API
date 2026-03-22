@@ -38,7 +38,7 @@ public interface EmpleadoRepository extends JpaRepository<Empleado, Long> {
     @Query("UPDATE Empleado e SET e.activo = false WHERE e.activo = true AND e.fechaBajaContrato IS NOT NULL AND e.fechaBajaContrato <= CURRENT_DATE")
     int desactivarEmpleadosConContratoExpirado();
 
-    @Query("SELECT new DatoGraficoDTO(COALESCE(e.departamento, 'Sin asignar'), COUNT(e)) " +
+    @Query("SELECT new com.gestorrh.api.dto.estadisticasDTO.DatoGraficoDTO(COALESCE(e.departamento, 'Sin asignar'), COUNT(e)) " +
             "FROM Empleado e " +
             "WHERE e.empresa.idEmpresa = :idEmpresa " +
             "GROUP BY e.departamento")
