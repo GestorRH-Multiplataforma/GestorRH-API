@@ -2,6 +2,7 @@ package com.gestorrh.api.service;
 
 import com.gestorrh.api.repository.EmpleadoRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -13,6 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
  */
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class TareaProgramadaService {
 
     private final EmpleadoRepository empleadoRepository;
@@ -25,10 +27,14 @@ public class TareaProgramadaService {
     @Scheduled(cron = "0 1 0 * * ?")
     @EventListener(ApplicationReadyEvent.class)
     public void actualizarEstadoEmpleados() {
+        log.info("[CRON] Iniciando tarea de mantenimiento: Revisión de contratos expirados...");
+
         int actualizados = empleadoRepository.desactivarEmpleadosConContratoExpirado();
 
         if (actualizados > 0) {
-            System.out.println("[Mantenimiento BD] Se han desactivado " + actualizados + " empleados con contrato expirado.");
+            log.info("[CRON] Mantenimiento completado: Se han desactivado {} empleados con contrato expirado.", actualizados);
+        } else {
+            log.info("[CRON] Mantenimiento completado: No se han detectado contratos expirados en el día de hoy.");
         }
     }
 }

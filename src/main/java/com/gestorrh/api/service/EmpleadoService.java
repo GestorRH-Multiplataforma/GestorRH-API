@@ -6,6 +6,7 @@ import com.gestorrh.api.entity.Empresa;
 import com.gestorrh.api.repository.EmpleadoRepository;
 import com.gestorrh.api.repository.EmpresaRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -21,6 +22,7 @@ import java.util.stream.Collectors;
  */
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class EmpleadoService {
 
     private final EmpleadoRepository empleadoRepository;
@@ -39,11 +41,11 @@ public class EmpleadoService {
                 .orElseThrow(() -> new RuntimeException("Empresa no encontrada en el sistema"));
 
         if (empleadoRepository.findByEmail(peticion.getEmail()).isPresent()) {
+            log.warn("Empresa '{}' intentó crear empleado fallido: El correo '{}' ya existe.", correoEmpresaAuth, peticion.getEmail());
             throw new RuntimeException("Ya existe un usuario con el correo: " + peticion.getEmail());
         }
 
         String contrasenaPlana = UUID.randomUUID().toString().substring(0, 8);
-
         String contrasenaEncriptada = codificadorPassword.encode(contrasenaPlana);
 
         Empleado nuevoEmpleado = Empleado.builder()
@@ -60,6 +62,8 @@ public class EmpleadoService {
                 .build();
 
         nuevoEmpleado = empleadoRepository.save(nuevoEmpleado);
+
+        log.info("ALTA DE EMPLEADO: La empresa '{}' ha registrado a '{}' con rol [{}]", empresa.getEmail(), nuevoEmpleado.getEmail(), nuevoEmpleado.getRol());
 
         return RespuestaCrearEmpleadoDTO.builder()
                 .idEmpleado(nuevoEmpleado.getIdEmpleado())
@@ -83,8 +87,6 @@ public class EmpleadoService {
                 .orElseThrow(() -> new RuntimeException("Empresa no encontrada"));
 
         List<Empleado> empleados = empleadoRepository.findByEmpresaIdEmpresa(empresa.getIdEmpresa());
-
-
 
         return empleados.stream().map(emp -> {
             boolean esRealmenteActivo = emp.getActivo() &&
@@ -119,6 +121,7 @@ public class EmpleadoService {
                 .orElseThrow(() -> new RuntimeException("Empleado no encontrado con ID: " + idEmpleado));
 
         if (!empleado.getEmpresa().getIdEmpresa().equals(empresaLogueada.getIdEmpresa())) {
+            log.warn("VIOLACIÓN DE SEGURIDAD: La empresa '{}' intentó modificar al empleado ID {}, que pertenece a otra empresa.", correoEmpresaAuth, idEmpleado);
             throw new RuntimeException("Acceso denegado: Este empleado no pertenece a tu empresa.");
         }
 
@@ -130,6 +133,8 @@ public class EmpleadoService {
         empleado.setRol(peticion.getRol());
 
         empleado = empleadoRepository.save(empleado);
+
+        log.info("La empresa '{}' ha ACTUALIZADO los datos del empleado ID {} ({})", correoEmpresaAuth, idEmpleado, empleado.getEmail());
 
         boolean esRealmenteActivo = empleado.getActivo() &&
                 (empleado.getFechaBajaContrato() == null || empleado.getFechaBajaContrato().isAfter(LocalDate.now()));
@@ -161,6 +166,7 @@ public class EmpleadoService {
                 .orElseThrow(() -> new RuntimeException("Empleado no encontrado"));
 
         if (!empleado.getEmpresa().getIdEmpresa().equals(empresaLogueada.getIdEmpresa())) {
+            log.warn("VIOLACIÓN DE SEGURIDAD: La empresa '{}' intentó dar de baja al empleado ID {}, que pertenece a otra empresa.", correoEmpresaAuth, idEmpleado);
             throw new RuntimeException("No tienes permiso para dar de baja a este empleado");
         }
 
@@ -168,6 +174,9 @@ public class EmpleadoService {
 
         if (!fechaBaja.isAfter(LocalDate.now())) {
             empleado.setActivo(false);
+            log.info("La empresa '{}' ha tramitado la BAJA INMEDIATA del empleado ID {} ({})", correoEmpresaAuth, idEmpleado, empleado.getEmail());
+        } else {
+            log.info("La empresa '{}' ha programado la BAJA del empleado ID {} ({}) para la fecha: {}", correoEmpresaAuth, idEmpleado, empleado.getEmail(), fechaBaja);
         }
 
         empleadoRepository.save(empleado);
@@ -188,10 +197,12 @@ public class EmpleadoService {
                 .orElseThrow(() -> new RuntimeException("Empleado no encontrado con ID: " + idEmpleado));
 
         if (!empleado.getEmpresa().getIdEmpresa().equals(empresaLogueada.getIdEmpresa())) {
+            log.warn("VIOLACIÓN DE SEGURIDAD: La empresa '{}' intentó readmitir al empleado ID {}, que pertenece a otra empresa.", correoEmpresaAuth, idEmpleado);
             throw new RuntimeException("Acceso denegado: Este empleado no pertenece a tu empresa.");
         }
 
         if (empleado.getFechaBajaContrato() == null) {
+            log.warn("La empresa '{}' intentó readmitir al empleado ID {}, pero ya estaba en estado activo.", correoEmpresaAuth, idEmpleado);
             throw new RuntimeException("El empleado ya está activo. No se puede readmitir a alguien que no está de baja.");
         }
 
@@ -203,6 +214,8 @@ public class EmpleadoService {
         empleado.setPassword(contrasenaEncriptada);
 
         empleado = empleadoRepository.save(empleado);
+
+        log.info("La empresa '{}' ha READMITIDO al empleado ID {} ({}) y se ha generado una nueva contraseña.", correoEmpresaAuth, idEmpleado, empleado.getEmail());
 
         return RespuestaCrearEmpleadoDTO.builder()
                 .idEmpleado(empleado.getIdEmpleado())
@@ -253,6 +266,7 @@ public class EmpleadoService {
                 .orElseThrow(() -> new RuntimeException("Error crítico: Empleado no encontrado en el sistema"));
 
         if (!codificadorPassword.matches(peticion.getPasswordActual(), empleado.getPassword())) {
+            log.warn("Cambio de contraseña DENEGADO para el empleado '{}': La contraseña actual no coincide.", correoEmpleadoAuth);
             throw new RuntimeException("La contraseña actual no es correcta. Operación denegada.");
         }
 
@@ -260,5 +274,6 @@ public class EmpleadoService {
         empleado.setPassword(nuevaContrasenaEncriptada);
 
         empleadoRepository.save(empleado);
+        log.info("El empleado '{}' ha cambiado su contraseña con éxito.", correoEmpleadoAuth);
     }
 }

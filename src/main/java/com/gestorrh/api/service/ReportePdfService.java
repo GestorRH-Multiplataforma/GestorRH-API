@@ -6,6 +6,7 @@ import com.lowagie.text.*;
 import com.lowagie.text.Font;
 import com.lowagie.text.Rectangle;
 import com.lowagie.text.pdf.*;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.awt.*;
@@ -15,6 +16,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 @Service
+@Slf4j
 public class ReportePdfService {
 
     private static final Color COLOR_CORPORATIVO = new Color(41, 128, 185);
@@ -31,6 +33,8 @@ public class ReportePdfService {
      * Genera el PDF detallado (Fila por fila, fichaje por fichaje) - DISEÑO REFINADO
      */
     public byte[] generarPdfDetalle(String nombreEmpresa, String subtituloFiltro, List<ReporteDetalleDTO> datos) {
+        log.info("GENERACIÓN PDF: Creando reporte DETALLADO para la empresa '{}'. Procesando {} fichajes.", nombreEmpresa, datos.size());
+
         try (ByteArrayOutputStream out = new ByteArrayOutputStream()) {
             Document document = new Document(PageSize.A4.rotate());
             PdfWriter writer = PdfWriter.getInstance(document, out);
@@ -94,6 +98,7 @@ public class ReportePdfService {
             document.close();
             return out.toByteArray();
         } catch (Exception e) {
+            log.error("Error crítico al generar el PDF Detallado para la empresa '{}': {}", nombreEmpresa, e.getMessage());
             throw new RuntimeException("Error al generar el PDF de Detalle", e);
         }
     }
@@ -102,6 +107,8 @@ public class ReportePdfService {
      * Genera el PDF resumido (Totales por empleado) - (SIN CAMBIOS, YA ESTABA BIEN)
      */
     public byte[] generarPdfResumen(String nombreEmpresa, String subtituloFiltro, List<ReporteResumenDTO> datos) {
+        log.info("GENERACIÓN PDF: Creando reporte RESUMIDO para la empresa '{}'. Procesando totales de {} empleados.", nombreEmpresa, datos.size());
+
         try (ByteArrayOutputStream out = new ByteArrayOutputStream()) {
             Document document = new Document(PageSize.A4);
             PdfWriter writer = PdfWriter.getInstance(document, out);
@@ -145,6 +152,7 @@ public class ReportePdfService {
             document.close();
             return out.toByteArray();
         } catch (Exception e) {
+            log.error("Error crítico al generar el PDF Resumido para la empresa '{}': {}", nombreEmpresa, e.getMessage());
             throw new RuntimeException("Error al generar el PDF de Resumen", e);
         }
     }

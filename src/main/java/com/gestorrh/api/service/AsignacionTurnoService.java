@@ -6,6 +6,7 @@ import com.gestorrh.api.entity.*;
 import com.gestorrh.api.entity.enums.EstadoAusencia;
 import com.gestorrh.api.repository.*;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -21,6 +22,7 @@ import java.util.stream.Collectors;
  */
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class AsignacionTurnoService {
 
     private final AsignacionTurnoRepository asignacionRepository;
@@ -59,6 +61,9 @@ public class AsignacionTurnoService {
                 .build();
 
         nuevaAsignacion = asignacionRepository.save(nuevaAsignacion);
+
+        log.info("NUEVA ASIGNACIÓN: El usuario '{}' ha asignado el turno ID {} al empleado ID {} para la fecha {}.",
+                emailAuth, turno.getIdTurno(), empleadoDestino.getIdEmpleado(), peticion.getFecha());
 
         return mapearARespuesta(nuevaAsignacion);
     }
@@ -140,6 +145,8 @@ public class AsignacionTurnoService {
 
         asignacionExistente = asignacionRepository.save(asignacionExistente);
 
+        log.info("ASIGNACIÓN MODIFICADA: El usuario '{}' ha modificado la asignación ID {} (Detalles guardados en BD).", emailAuth, idAsignacion);
+
         return mapearARespuesta(asignacionExistente);
     }
 
@@ -158,6 +165,8 @@ public class AsignacionTurnoService {
         validarPrivilegiosAsignacion(emailAuth, esEmpresa, asignacion.getEmpleado(), asignacion.getTurno());
 
         asignacionRepository.delete(asignacion);
+
+        log.warn("ASIGNACIÓN ELIMINADA: El usuario '{}' ha borrado permanentemente la asignación ID {}.", emailAuth, idAsignacion);
     }
 
     // MÉTODOS PRIVADOS DE REGLAS DE NEGOCIO
@@ -179,6 +188,7 @@ public class AsignacionTurnoService {
 
         if (!empleadoDestino.getEmpresa().getIdEmpresa().equals(idEmpresaContexto) ||
                 !turno.getEmpresa().getIdEmpresa().equals(idEmpresaContexto)) {
+            log.warn("VIOLACIÓN DE SEGURIDAD: El usuario '{}' intentó gestionar una asignación fuera de su jurisdicción.", emailAuth);
             throw new RuntimeException("Acceso denegado: Violación de seguridad Multi-Tenant.");
         }
     }

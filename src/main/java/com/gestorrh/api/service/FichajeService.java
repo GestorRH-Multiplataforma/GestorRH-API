@@ -14,6 +14,7 @@ import com.gestorrh.api.repository.EmpleadoRepository;
 import com.gestorrh.api.repository.EmpresaRepository;
 import com.gestorrh.api.repository.FichajeRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -26,6 +27,7 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class FichajeService {
 
     private final FichajeRepository fichajeRepository;
@@ -47,6 +49,7 @@ public class FichajeService {
 
         List<Fichaje> abiertos = fichajeRepository.findByEmpleadoIdEmpleadoAndFechaAndHoraSalidaIsNull(empleado.getIdEmpleado(), hoy);
         if (!abiertos.isEmpty()) {
+            log.warn("Fichaje DENEGADO (Entrada): El empleado '{}' intentó abrir un turno, pero ya tiene uno abierto sin cerrar.", empleado.getEmail());
             throw new RuntimeException("No puedes fichar la entrada: ya tienes un turno abierto sin registrar la salida.");
         }
 
@@ -64,6 +67,7 @@ public class FichajeService {
                 );
 
                 if (!gpsValido) {
+                    log.warn("Fichaje DENEGADO (Geovallado): El empleado '{}' intentó fichar PRESENCIAL fuera del radio permitido.", empleado.getEmail());
                     throw new RuntimeException("Fichaje denegado: Estás fuera del radio permitido de la oficina para tu turno presencial.");
                 }
             }
@@ -71,10 +75,14 @@ public class FichajeService {
             LocalDateTime horaInicioTurno = hoy.atTime(asignacionActual.getTurno().getHoraInicio());
             if (ahora.isAfter(horaInicioTurno.plusMinutes(MINUTOS_CORTESIA))) {
                 incidencias = "Retraso en la entrada. Fichó a las " + ahora.toLocalTime() + ". ";
+                log.info("Fichaje ENTRADA (CON RETRASO): El empleado '{}' ha fichado a las {}.", empleado.getEmail(), ahora.toLocalTime());
+            } else {
+                log.info("Fichaje ENTRADA: El empleado '{}' ha fichado correctamente.", empleado.getEmail());
             }
 
         } else {
             incidencias = "Fichaje registrado sin turno asignado para el día de hoy. ";
+            log.info("Fichaje ENTRADA (SIN TURNO): El empleado '{}' ha fichado sin tener turno planificado.", empleado.getEmail());
         }
 
         Fichaje nuevoFichaje = Fichaje.builder()
@@ -99,6 +107,7 @@ public class FichajeService {
 
         List<Fichaje> abiertos = fichajeRepository.findByEmpleadoIdEmpleadoAndFechaAndHoraSalidaIsNull(empleado.getIdEmpleado(), hoy);
         if (abiertos.isEmpty()) {
+            log.warn("Fichaje DENEGADO (Salida): El empleado '{}' intentó fichar la salida sin tener una entrada abierta.", empleado.getEmail());
             throw new RuntimeException("No puedes fichar la salida: no tienes ninguna entrada abierta para el día de hoy.");
         }
 
@@ -115,7 +124,12 @@ public class FichajeService {
                 String nuevaIncidencia = "Salida anticipada a las " + ahora.toLocalTime() + ". ";
                 String incidenciasPrevias = fichajeAbierto.getIncidencias() == null ? "" : fichajeAbierto.getIncidencias() + " | ";
                 fichajeAbierto.setIncidencias(incidenciasPrevias + nuevaIncidencia);
+                log.info("Fichaje SALIDA (ANTICIPADA): El empleado '{}' ha salido antes de tiempo a las {}.", empleado.getEmail(), ahora.toLocalTime());
+            } else {
+                log.info("Fichaje SALIDA: El empleado '{}' ha cerrado su turno correctamente.", empleado.getEmail());
             }
+        } else {
+            log.info("Fichaje SALIDA: El empleado '{}' ha cerrado su turno (no planificado).", empleado.getEmail());
         }
 
         fichajeAbierto = fichajeRepository.save(fichajeAbierto);
@@ -179,17 +193,20 @@ public class FichajeService {
         if (esEmpresa) {
             Empresa empresa = empresaRepository.findByEmail(emailAuth).orElseThrow();
             if (!fichaje.getEmpleado().getEmpresa().getIdEmpresa().equals(empresa.getIdEmpresa())) {
+                log.warn("VIOLACIÓN DE SEGURIDAD: La empresa '{}' intentó modificar el fichaje ID {} de otra empresa.", emailAuth, idFichaje);
                 throw new RuntimeException("Acceso denegado: El fichaje pertenece a otra empresa.");
             }
         } else {
             Empleado supervisor = empleadoRepository.findByEmail(emailAuth).orElseThrow();
 
             if (fichaje.getEmpleado().getIdEmpleado().equals(supervisor.getIdEmpleado())) {
+                log.warn("DENEGADO: El supervisor '{}' intentó modificar su propio fichaje ID {}.", emailAuth, idFichaje);
                 throw new RuntimeException("Conflicto de intereses: Como supervisor no puedes modificar tus propios fichajes. Debe hacerlo la empresa u otro supervisor.");
             }
 
             if (!fichaje.getEmpleado().getEmpresa().getIdEmpresa().equals(supervisor.getEmpresa().getIdEmpresa()) ||
                     !fichaje.getEmpleado().getDepartamento().equalsIgnoreCase(supervisor.getDepartamento())) {
+                log.warn("VIOLACIÓN DE SEGURIDAD: El supervisor '{}' intentó modificar el fichaje ID {} fuera de su jurisdicción.", emailAuth, idFichaje);
                 throw new RuntimeException("Acceso denegado: Solo puedes modificar fichajes de los empleados de tu departamento.");
             }
         }
@@ -215,6 +232,9 @@ public class FichajeService {
         }
 
         fichaje = fichajeRepository.save(fichaje);
+
+        log.info("AUDITORÍA: El fichaje ID {} ha sido MODIFICADO MANUALMENTE por '{}'. Motivo: {}", idFichaje, emailAuth, peticion.getMotivoModificacion());
+
         return mapearARespuesta(fichaje);
     }
 
