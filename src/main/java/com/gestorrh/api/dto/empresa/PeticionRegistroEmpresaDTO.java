@@ -8,6 +8,9 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * DTO para la petición de registro de una nueva empresa.
+ */
 @Data
 @Builder
 @NoArgsConstructor

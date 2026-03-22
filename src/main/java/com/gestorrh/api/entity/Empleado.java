@@ -33,13 +33,11 @@ public class Empleado {
     @Column(name = "id_empleado")
     private Long idEmpleado;
 
-    // --- RELACIONES ---
     @NotNull(message = "El empleado debe pertenecer a una empresa")
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "empresa_id", nullable = false)
     private Empresa empresa;
 
-    // --- DATOS DE ACCESO ---
     @NotBlank(message = "El email no puede estar vacío")
     @Email(message = "El formato del email no es válido")
     @Column(name = "email", nullable = false, unique = true, length = 100)
@@ -49,7 +47,6 @@ public class Empleado {
     @Column(name = "password", nullable = false, length = 255)
     private String password;
 
-    // --- DATOS PERSONALES ---
     @NotBlank(message = "El nombre es obligatorio")
     @Column(name = "nombre", nullable = false, length = 100)
     private String nombre;

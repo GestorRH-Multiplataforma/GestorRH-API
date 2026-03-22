@@ -18,7 +18,21 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 /**
- * Servicio principal para la Épica E5: Gestión de Asignaciones de Turnos.
+ * Servicio encargado de la planificación operativa y gestión de turnos de trabajo.
+ * <p>
+ * Este servicio centraliza el calendario laboral de los empleados, permitiendo 
+ * la asignación de turnos (mañana, tarde, etc.) bajo diferentes modalidades 
+ * (presencial o teletrabajo). 
+ * </p>
+ * <p>
+ * Implementa un motor de reglas de negocio avanzado para garantizar:
+ * </p>
+ * <ul>
+ *   <li><b>Jornada Máxima:</b> Impide exceder los límites diarios de tiempo de trabajo permitidos.</li>
+ *   <li><b>Consistencia:</b> Valida la configuración de la sede física de la empresa.</li>
+ *   <li><b>Disponibilidad:</b> Previene el solapamiento con periodos de vacaciones o ausencias aprobadas.</li>
+ *   <li><b>Trazabilidad:</b> Registra metadatos de auditoría para cada modificación manual de la planificación.</li>
+ * </ul>
  */
 @Service
 @RequiredArgsConstructor
@@ -33,6 +47,18 @@ public class AsignacionTurnoService {
 
     private static final long MAX_MINUTOS_JORNADA = 8 * 60;
 
+    /**
+     * Crea y persiste una nueva asignación de turno en el sistema.
+     * <p>
+     * El flujo de creación incluye verificaciones de seguridad multi-tenant (para asegurar 
+     * que el responsable, el empleado y el turno pertenecen a la misma empresa) y 
+     * validaciones de negocio contra el límite de horas diarias y periodos de vacaciones.
+     * </p>
+     *
+     * @param peticion Objeto {@link PeticionAsignacionTurnoDTO} con los detalles de la planificación propuesta.
+     * @return {@link RespuestaAsignacionTurnoDTO} con los datos de la asignación confirmada satisfactoriamente.
+     * @throws RuntimeException Si se violan reglas de integridad, límites de jornada o permisos de seguridad.
+     */
     @Transactional
     public RespuestaAsignacionTurnoDTO crearAsignacion(PeticionAsignacionTurnoDTO peticion) {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
@@ -68,6 +94,13 @@ public class AsignacionTurnoService {
         return mapearARespuesta(nuevaAsignacion);
     }
 
+    /**
+     * Recupera todas las asignaciones de turnos que el usuario autenticado tiene permiso para visualizar.
+     * - EMPRESA: Acceso total a las asignaciones de su plantilla.
+     * - SUPERVISOR: Acceso limitado a los empleados de su propio departamento.
+     *
+     * @return List de {@link RespuestaAsignacionTurnoDTO} con la planificación consultada.
+     */
     @Transactional(readOnly = true)
     public List<RespuestaAsignacionTurnoDTO> obtenerAsignacionesPermitidas() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
@@ -89,8 +122,9 @@ public class AsignacionTurnoService {
     }
 
     /**
-     * Endpoint exclusivo para el rol EMPLEADO.
-     * Devuelve únicamente las asignaciones del usuario que hace la petición.
+     * Obtiene el calendario de turnos personal del empleado autenticado.
+     *
+     * @return List de {@link RespuestaAsignacionTurnoDTO} con las asignaciones propias.
      */
     @Transactional(readOnly = true)
     public List<RespuestaAsignacionTurnoDTO> obtenerMisAsignaciones() {
@@ -105,7 +139,14 @@ public class AsignacionTurnoService {
     }
 
     /**
-     * Modifica una asignación existente. Registra la auditoría del cambio.
+     * Actualiza una asignación de turno existente.
+     * Es obligatorio registrar el motivo del cambio para mantener la trazabilidad de la auditoría.
+     * Se vuelven a validar las restricciones de jornada máxima y ausencias.
+     *
+     * @param idAsignacion Identificador único de la asignación a modificar.
+     * @param peticion DTO con los nuevos parámetros del turno y el motivo del cambio.
+     * @return {@link RespuestaAsignacionTurnoDTO} con los datos actualizados y metadatos de auditoría.
+     * @throws RuntimeException Si falta el motivo del cambio o se violan reglas de negocio.
      */
     @Transactional
     public RespuestaAsignacionTurnoDTO actualizarAsignacion(Long idAsignacion, PeticionAsignacionTurnoDTO peticion) {
@@ -151,7 +192,9 @@ public class AsignacionTurnoService {
     }
 
     /**
-     * Elimina una asignación (ej. si se asignó por error).
+     * Elimina permanentemente una asignación de turno del sistema.
+     *
+     * @param idAsignacion Identificador de la asignación a borrar.
      */
     @Transactional
     public void eliminarAsignacion(Long idAsignacion) {
@@ -169,8 +212,15 @@ public class AsignacionTurnoService {
         log.warn("ASIGNACIÓN ELIMINADA: El usuario '{}' ha borrado permanentemente la asignación ID {}.", emailAuth, idAsignacion);
     }
 
-    // MÉTODOS PRIVADOS DE REGLAS DE NEGOCIO
-
+    /**
+     * Verifica que el usuario tenga permisos legales para gestionar la jornada de un empleado y turno.
+     * Implementa lógica multi-tenant y de supervisión por departamento.
+     *
+     * @param emailAuth Email del usuario que realiza la operación.
+     * @param esEmpresa Indica si es un perfil de empresa.
+     * @param empleadoDestino Empleado cuya jornada se gestiona.
+     * @param turno {@link Turno} que se pretende asignar.
+     */
     private void validarPrivilegiosAsignacion(String emailAuth, boolean esEmpresa, Empleado empleadoDestino, Turno turno) {
         Long idEmpresaContexto;
 
@@ -193,6 +243,13 @@ public class AsignacionTurnoService {
         }
     }
 
+    /**
+     * Asegura que el empleado no supere el máximo de minutos permitidos por jornada diaria (ej. 8 horas).
+     *
+     * @param idEmpleado ID del trabajador.
+     * @param fecha Día de la jornada.
+     * @param nuevoTurno {@link Turno} que se desea añadir.
+     */
     private void validarLimiteHorasDiarias(Long idEmpleado, java.time.LocalDate fecha, Turno nuevoTurno) {
         List<AsignacionTurno> turnosDelDia = asignacionRepository.findByEmpleadoIdEmpleadoAndFecha(idEmpleado, fecha);
 
@@ -208,6 +265,14 @@ public class AsignacionTurnoService {
         }
     }
 
+    /**
+     * Variante de validación de jornada que tiene en cuenta el reemplazo de un turno existente.
+     *
+     * @param idEmpleado ID del trabajador.
+     * @param fecha Día de la jornada.
+     * @param nuevoTurno Nuevo turno propuesto.
+     * @param minutosADescontar Minutos del turno que será reemplazado.
+     */
     private void validarLimiteHorasDiariasConDescuento(Long idEmpleado, java.time.LocalDate fecha, Turno nuevoTurno, long minutosADescontar) {
         List<AsignacionTurno> turnosDelDia = asignacionRepository.findByEmpleadoIdEmpleadoAndFecha(idEmpleado, fecha);
 
@@ -223,12 +288,24 @@ public class AsignacionTurnoService {
         }
     }
 
+    /**
+     * Comprueba si el empleado tiene una ausencia ya aprobada para la fecha en la que se le intenta asignar trabajo.
+     *
+     * @param idEmpleado ID del trabajador.
+     * @param fechaTurno Fecha de la asignación.
+     */
     private void validarQueNoEsteDeVacaciones(Long idEmpleado, java.time.LocalDate fechaTurno) {
         if (ausenciaRepository.tieneAusenciaAprobadaEnFecha(idEmpleado, EstadoAusencia.APROBADA, fechaTurno)) {
             throw new RuntimeException("Regla de negocio violada: No se puede asignar un turno. El empleado tiene una ausencia APROBADA en esa fecha.");
         }
     }
 
+    /**
+     * Mapea la entidad {@link AsignacionTurno} a su DTO de respuesta detallado.
+     *
+     * @param asig Entidad de base de datos.
+     * @return {@link RespuestaAsignacionTurnoDTO} con toda la información, incluyendo auditoría.
+     */
     private RespuestaAsignacionTurnoDTO mapearARespuesta(AsignacionTurno asig) {
         return RespuestaAsignacionTurnoDTO.builder()
                 .idAsignacion(asig.getIdAsignacion())
@@ -244,6 +321,11 @@ public class AsignacionTurnoService {
                 .build();
     }
 
+    /**
+     * Valida que la empresa tenga configurada su sede física para permitir asignaciones de turnos.
+     *
+     * @param empresa Entidad {@link Empresa} a validar.
+     */
     private void validarSedeConfigurada(com.gestorrh.api.entity.Empresa empresa) {
         if (empresa.getLatitudSede() == null || empresa.getLongitudSede() == null || empresa.getRadioValidez() == null) {
             throw new RuntimeException("Operación denegada: La empresa debe configurar la ubicación de su sede (latitud, longitud y radio) en su perfil antes de poder asignar turnos a los empleados.");

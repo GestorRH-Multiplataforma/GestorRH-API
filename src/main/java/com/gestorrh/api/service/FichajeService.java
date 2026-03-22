@@ -25,6 +25,18 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
+/**
+ * Servicio central para la gestión de fichajes y registros de jornada de los empleados.
+ * <p>
+ * Gestiona el ciclo completo de la jornada laboral: desde el registro de entrada con validación 
+ * de geolocalización (geovallado) y detección de retrasos, hasta el registro de salida 
+ * con cálculo automático de incidencias horarias.
+ * </p>
+ * <p>
+ * Proporciona además funcionalidades críticas de auditoría para la modificación manual de fichajes
+ * por parte de gestores, garantizando la trazabilidad de cualquier alteración en el registro de tiempos.
+ * </p>
+ */
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -38,8 +50,22 @@ public class FichajeService {
 
     private static final int MINUTOS_CORTESIA = 15;
 
-    // 1. LÓGICA DE ENTRADA Y SALIDA (SOLO MÓVIL: EMPLEADOS Y SUPERVISORES)
-
+    /**
+     * Registra un nuevo inicio de jornada (fichaje de entrada) para el empleado autenticado.
+     * <p>
+     * El flujo de ejecución realiza las siguientes validaciones críticas:
+     * </p>
+     * <ol>
+     *   <li><b>Configuración de Sede:</b> Verifica que la empresa haya configurado sus coordenadas GPS y radio de validez.</li>
+     *   <li><b>Fichaje Duplicado:</b> Impide abrir una nueva jornada si ya existe un registro abierto (sin hora de salida) para hoy.</li>
+     *   <li><b>Geovallado:</b> Si el turno asignado es de modalidad presencial, valida que la ubicación GPS recibida esté dentro del radio permitido respecto a la sede.</li>
+     *   <li><b>Control de Puntualidad:</b> Compara la hora actual con el inicio del turno asignado (incluyendo un margen de cortesía de 15 minutos) para detectar posibles retrasos.</li>
+     * </ol>
+     *
+     * @param peticion Objeto {@link PeticionFichajeEntradaDTO} con las coordenadas GPS (latitud y longitud) del empleado.
+     * @return {@link RespuestaFichajeDTO} con los detalles del registro creado satisfactoriamente.
+     * @throws RuntimeException Si se detecta una violación de geolocalización o si el estado del empleado/empresa es inválido para operar.
+     */
     @Transactional
     public RespuestaFichajeDTO ficharEntrada(PeticionFichajeEntradaDTO peticion) {
         Empleado empleado = obtenerEmpleadoAutenticado();
@@ -99,6 +125,14 @@ public class FichajeService {
         return mapearARespuesta(nuevoFichaje);
     }
 
+    /**
+     * Finaliza la jornada laboral actual registrando el fichaje de salida.
+     * Calcula posibles incidencias por salida anticipada si el empleado cierra el turno antes de la hora prevista.
+     *
+     * @param peticion DTO con las coordenadas GPS del momento de salida.
+     * @return RespuestaFichajeDTO con la información actualizada incluyendo la hora de salida.
+     * @throws RuntimeException Si no hay ninguna entrada abierta para el día de hoy.
+     */
     @Transactional
     public RespuestaFichajeDTO ficharSalida(PeticionFichajeSalidaDTO peticion) {
         Empleado empleado = obtenerEmpleadoAutenticado();
@@ -136,8 +170,18 @@ public class FichajeService {
         return mapearARespuesta(fichajeAbierto);
     }
 
-    // 2. LÓGICA DE CONSULTAS (ESCRITORIO / MÓVIL SEGÚN EL ROL)
-
+    /**
+     * Consulta el historial de fichajes bajo un rango de fechas y filtros opcionales.
+     * La visibilidad de los datos depende del rol:
+     * - EMPRESA: Ve todos los fichajes de su plantilla.
+     * - SUPERVISOR: Ve fichajes de su departamento.
+     * - EMPLEADO: Ve únicamente sus propios registros.
+     *
+     * @param fechaInicio Fecha de inicio de la búsqueda.
+     * @param fechaFin Fecha de fin de la búsqueda.
+     * @param empleadoIdFiltro Identificador opcional para filtrar por un empleado concreto.
+     * @return List de RespuestaFichajeDTO con los registros localizados.
+     */
     @Transactional(readOnly = true)
     public List<RespuestaFichajeDTO> consultarFichajes(LocalDate fechaInicio, LocalDate fechaFin, Long empleadoIdFiltro) {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
@@ -181,6 +225,16 @@ public class FichajeService {
         return fichajes.stream().map(this::mapearARespuesta).collect(Collectors.toList());
     }
 
+    /**
+     * Permite a una empresa o supervisor modificar manualmente las horas de un fichaje ya registrado.
+     * Esta operación está estrictamente auditada y requiere un motivo justificado. Los supervisores
+     * no pueden modificar sus propios fichajes.
+     *
+     * @param idFichaje Identificador del registro a modificar.
+     * @param peticion DTO con las nuevas horas y el motivo de la modificación.
+     * @return RespuestaFichajeDTO con el registro actualizado y la marca de auditoría en incidencias.
+     * @throws RuntimeException Si la modificación viola reglas de seguridad o jurisdicción de roles.
+     */
     @Transactional
     public RespuestaFichajeDTO modificarFichajeManual(Long idFichaje, PeticionModificacionFichajeDTO peticion) {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
@@ -238,20 +292,35 @@ public class FichajeService {
         return mapearARespuesta(fichaje);
     }
 
-    // MÉTODOS PRIVADOS
-
+    /**
+     * Obtiene la entidad {@link Empleado} asociada al usuario autenticado en el sistema.
+     *
+     * @return Empleado que realiza la operación.
+     */
     private Empleado obtenerEmpleadoAutenticado() {
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
         return empleadoRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("Empleado no encontrado"));
     }
 
+    /**
+     * Valida que la empresa tenga configurada la ubicación de su sede.
+     * Es un requisito indispensable para poder realizar fichajes con geovallado.
+     *
+     * @param empresa La entidad empresa a validar.
+     */
     private void validarSedeConfigurada(Empresa empresa) {
         if (empresa.getLatitudSede() == null || empresa.getLongitudSede() == null || empresa.getRadioValidez() == null) {
             throw new RuntimeException("Operación denegada: La empresa debe configurar la ubicación de su sede en el perfil antes de permitir registrar fichajes.");
         }
     }
 
+    /**
+     * Mapea una entidad {@link Fichaje} a su correspondiente DTO de respuesta.
+     *
+     * @param f Entidad de base de datos.
+     * @return RespuestaFichajeDTO formateado para la API.
+     */
     private RespuestaFichajeDTO mapearARespuesta(Fichaje f) {
         return RespuestaFichajeDTO.builder()
                 .idFichaje(f.getIdFichaje())

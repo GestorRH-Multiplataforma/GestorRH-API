@@ -14,7 +14,6 @@ import java.time.LocalDateTime;
 
 /**
  * Entidad que cruza a un Empleado con un Turno en una fecha concreta.
- * Épica E5 - Gestión de Asignaciones.
  */
 @Entity
 @Table(name = "asignacion_turno")

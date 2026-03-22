@@ -18,7 +18,16 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 /**
- * Servicio encargado de la lógica de negocio de los Empleados.
+ * Servicio encargado de la gestión integral del capital humano de las organizaciones.
+ * <p>
+ * Proporciona la lógica de negocio necesaria para administrar el ciclo de vida del empleado:
+ * desde el alta inicial con generación de credenciales temporales, hasta la gestión de bajas,
+ * readmisiones y el mantenimiento del perfil profesional.
+ * </p>
+ * <p>
+ * Implementa políticas estrictas de seguridad multi-tenant para asegurar que los datos
+ * del personal sean accesibles únicamente por la empresa propietaria o el propio empleado.
+ * </p>
  */
 @Service
 @RequiredArgsConstructor
@@ -30,7 +39,15 @@ public class EmpleadoService {
     private final PasswordEncoder codificadorPassword;
 
     /**
-     * Crea un nuevo empleado asociado automáticamente a la empresa que hace la petición.
+     * Registra un nuevo empleado en la organización y le vincula automáticamente a la empresa solicitante.
+     * <p>
+     * El proceso de alta automatiza la seguridad inicial: genera una contraseña aleatoria de 8 caracteres
+     * mediante {@link UUID} para el primer inicio de sesión del trabajador.
+     * </p>
+     *
+     * @param peticion Objeto {@link PeticionCrearEmpleadoDTO} con la información del nuevo trabajador.
+     * @return {@link RespuestaCrearEmpleadoDTO} que incluye la identificación del sistema y la contraseña temporal generada.
+     * @throws RuntimeException Si el correo electrónico ya existe en la base de datos (Restricción de unicidad).
      */
     @Transactional
     public RespuestaCrearEmpleadoDTO crearEmpleado(PeticionCrearEmpleadoDTO peticion) {
@@ -76,7 +93,10 @@ public class EmpleadoService {
     }
 
     /**
-     * Obtiene la lista de todos los empleados pertenecientes a la empresa autenticada.
+     * Recupera la lista completa de empleados que pertenecen a la empresa autenticada.
+     * Calcula dinámicamente el estado de actividad basándose en la fecha de baja del contrato.
+     *
+     * @return List de {@link RespuestaEmpleadoDTO} con el personal de la empresa.
      */
     @Transactional(readOnly = true)
     public List<RespuestaEmpleadoDTO> obtenerEmpleadosDeEmpresa() {
@@ -108,7 +128,13 @@ public class EmpleadoService {
     }
 
     /**
-     * Actualiza los datos de un empleado, verificando que pertenezca a la empresa logueada.
+     * Actualiza la información profesional y de contacto de un empleado.
+     * Verifica estrictamente que el empleado pertenezca a la empresa que solicita la modificación.
+     *
+     * @param idEmpleado Identificador único del empleado a modificar.
+     * @param peticion DTO con los nuevos datos (nombre, apellidos, puesto, rol, etc.).
+     * @return {@link RespuestaEmpleadoDTO} con los datos actualizados.
+     * @throws RuntimeException Si el empleado no existe o pertenece a otra empresa (Violación de seguridad).
      */
     @Transactional
     public RespuestaEmpleadoDTO actualizarEmpleado(Long idEmpleado, PeticionActualizarEmpleadoDTO peticion) {
@@ -154,7 +180,12 @@ public class EmpleadoService {
     }
 
     /**
-     * Registra la baja de un empleado poniendo la fecha de hoy como fin de contrato.
+     * Tramita la baja laboral de un empleado en el sistema.
+     * Si la fecha de baja es igual o anterior a hoy, el empleado se marca como inactivo inmediatamente.
+     * Si es posterior, la baja queda programada para su procesamiento automático futuro.
+     *
+     * @param idEmpleado Identificador del empleado.
+     * @param fechaBaja Fecha efectiva de la finalización del contrato.
      */
     @Transactional
     public void darDeBajaEmpleado(Long idEmpleado, LocalDate fechaBaja) {
@@ -183,8 +214,11 @@ public class EmpleadoService {
     }
 
     /**
-     * Readmite a un empleado que estaba de baja, reseteando su fecha de fin de contrato
-     * y generándole una nueva contraseña de acceso.
+     * Reincorpora a un empleado que previamente se encontraba en estado de baja.
+     * Limpia la fecha de fin de contrato, reactiva la cuenta y genera una nueva contraseña de acceso.
+     *
+     * @param idEmpleado Identificador del empleado a readmitir.
+     * @return {@link RespuestaCrearEmpleadoDTO} con la nueva contraseña de acceso para el empleado reincorporado.
      */
     @Transactional
     public RespuestaCrearEmpleadoDTO readmitirEmpleado(Long idEmpleado) {
@@ -228,8 +262,10 @@ public class EmpleadoService {
     }
 
     /**
-     * Obtiene los datos del empleado que ha iniciado sesión.
-     * Se basa exclusivamente en el Token JWT, ignorando cualquier ID externo.
+     * Recupera la información detallada del perfil del empleado que ha iniciado sesión.
+     * Este método se basa en el contexto de seguridad JWT.
+     *
+     * @return {@link RespuestaEmpleadoDTO} con los datos del perfil propio del empleado.
      */
     @Transactional(readOnly = true)
     public RespuestaEmpleadoDTO obtenerMiPerfil() {
@@ -256,7 +292,10 @@ public class EmpleadoService {
     }
 
     /**
-     * Permite al empleado autenticado cambiar su propia contraseña.
+     * Permite al empleado autenticado actualizar su contraseña personal.
+     * Requiere la validación exitosa de su contraseña actual.
+     *
+     * @param peticion DTO con la contraseña actual y la nueva contraseña deseada.
      */
     @Transactional
     public void cambiarMiContrasena(PeticionCambiarPasswordDTO peticion) {

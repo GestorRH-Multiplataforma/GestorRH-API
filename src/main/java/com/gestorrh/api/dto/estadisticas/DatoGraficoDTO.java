@@ -16,6 +16,6 @@ import lombok.NoArgsConstructor;
 public class DatoGraficoDTO {
 
     private String etiqueta;
-    private Number valor; // 15 (empleados), 45.5 (horas extra)
+    private Number valor;
 
 }

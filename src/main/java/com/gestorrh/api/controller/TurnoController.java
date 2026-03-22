@@ -14,7 +14,8 @@ import java.util.List;
 
 /**
  * Controlador REST para la gestión del catálogo de Turnos.
- * Cumple con la Épica E4 del Anteproyecto.
+ * Proporciona endpoints para crear, listar, actualizar y eliminar los diferentes turnos de trabajo
+ * que una empresa puede asignar a sus empleados.
  */
 @RestController
 @RequestMapping("/api/turnos")
@@ -24,12 +25,13 @@ public class TurnoController {
     private final TurnoService turnoService;
 
     /**
-     * Endpoint para crear un nuevo tipo de turno.
-     * SOLO accesible para usuarios con el rol EMPRESA.
-     * URL: POST http://localhost:8080/api/turnos
+     * Endpoint para la creación de un nuevo tipo de turno en el sistema.
+     * Este recurso es de acceso restringido únicamente para usuarios que posean el rol de 'EMPRESA'.
      *
-     * @param peticion DTO con los datos del turno (descripción, horaInicio, horaFin).
-     * @return ResponseEntity con el DTO del turno creado y estado HTTP 201 (Created).
+     * URL de acceso: {@code POST http://localhost:8080/api/turnos}
+     *
+     * @param peticion DTO que contiene los detalles del turno a crear, incluyendo descripción, hora de inicio y hora de fin.
+     * @return ResponseEntity con el objeto {@link RespuestaTurnoDTO} que representa el turno recién creado y el código de estado HTTP 201 (Created).
      */
     @PostMapping
     @PreAuthorize("hasRole('EMPRESA')")
@@ -39,11 +41,12 @@ public class TurnoController {
     }
 
     /**
-     * Endpoint para listar todos los turnos configurados por la empresa logueada.
-     * SOLO accesible para usuarios con el rol EMPRESA.
-     * URL: GET http://localhost:8080/api/turnos
+     * Endpoint para obtener el listado completo de todos los turnos configurados por la empresa autenticada.
+     * Este recurso es accesible para usuarios con los roles 'EMPRESA' o 'SUPERVISOR'.
      *
-     * @return ResponseEntity con la lista de turnos y estado HTTP 200 (OK).
+     * URL de acceso: {@code GET http://localhost:8080/api/turnos}
+     *
+     * @return ResponseEntity que contiene una lista de objetos {@link RespuestaTurnoDTO} y el código de estado HTTP 200 (OK).
      */
     @GetMapping
     @PreAuthorize("hasAnyRole('EMPRESA', 'SUPERVISOR')")
@@ -53,13 +56,14 @@ public class TurnoController {
     }
 
     /**
-     * Endpoint para modificar un turno existente.
-     * SOLO accesible para usuarios con el rol EMPRESA.
-     * URL: PUT http://localhost:8080/api/turnos/{id}
+     * Endpoint para modificar la información de un turno ya existente en la base de datos.
+     * Este recurso es de acceso restringido únicamente para usuarios con el rol de 'EMPRESA'.
      *
-     * @param id Identificador único del turno a modificar.
-     * @param peticion DTO con los nuevos datos del turno.
-     * @return ResponseEntity con el DTO del turno actualizado y estado HTTP 200 (OK).
+     * URL de acceso: {@code PUT http://localhost:8080/api/turnos/{id}}
+     *
+     * @param id Identificador único y numérico del turno que se desea modificar.
+     * @param peticion DTO que contiene los nuevos datos que se asignarán al turno especificado.
+     * @return ResponseEntity con el objeto {@link RespuestaTurnoDTO} actualizado y el código de estado HTTP 200 (OK).
      */
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('EMPRESA')")
@@ -71,12 +75,13 @@ public class TurnoController {
     }
 
     /**
-     * Endpoint para eliminar físicamente un turno.
-     * SOLO accesible para usuarios con el rol EMPRESA.
-     * URL: DELETE http://localhost:8080/api/turnos/{id}
+     * Endpoint para proceder a la eliminación física de un turno del catálogo de la empresa.
+     * Este recurso es de acceso restringido únicamente para usuarios con el rol de 'EMPRESA'.
      *
-     * @param id Identificador único del turno a eliminar.
-     * @return ResponseEntity vacío con estado HTTP 204 (No Content).
+     * URL de acceso: {@code DELETE http://localhost:8080/api/turnos/{id}}
+     *
+     * @param id Identificador único y numérico del turno que se desea eliminar de forma permanente.
+     * @return ResponseEntity con cuerpo vacío y el código de estado HTTP 204 (No Content) tras una ejecución exitosa.
      */
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('EMPRESA')")

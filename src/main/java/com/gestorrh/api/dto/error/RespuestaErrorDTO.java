@@ -7,7 +7,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 /**
- * DTO que estandariza las respuestas de error de la API (Issue P0-31).
+ * DTO que estandariza las respuestas de error de la API.
  */
 @Getter
 @Builder

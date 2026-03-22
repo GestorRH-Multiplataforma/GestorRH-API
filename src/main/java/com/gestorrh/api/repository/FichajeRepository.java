@@ -9,15 +9,45 @@ import org.springframework.stereotype.Repository;
 import java.time.LocalDate;
 import java.util.List;
 
+/**
+ * Repositorio para gestionar las operaciones de base de datos de la entidad {@link Fichaje}.
+ * Registra y consulta las entradas y salidas de los empleados, así como sus incidencias.
+ */
 @Repository
 public interface FichajeRepository extends JpaRepository<Fichaje, Long> {
 
+    /**
+     * Busca fichajes activos de un empleado (sin hora de salida) para una fecha específica.
+     * Útil para detectar si un empleado tiene un fichaje pendiente de cerrar.
+     * @param idEmpleado El ID del empleado.
+     * @param fecha La fecha a consultar.
+     * @return Lista de fichajes abiertos.
+     */
     List<Fichaje> findByEmpleadoIdEmpleadoAndFechaAndHoraSalidaIsNull(Long idEmpleado, LocalDate fecha);
 
+    /**
+     * Recupera el historial de fichajes de un empleado en un rango de fechas.
+     * @param idEmpleado El ID del empleado.
+     * @param fechaInicio Fecha de inicio del periodo.
+     * @param fechaFin Fecha de fin del periodo.
+     * @return Lista de fichajes realizados en el periodo.
+     */
     List<Fichaje> findByEmpleadoIdEmpleadoAndFechaBetween(Long idEmpleado, LocalDate fechaInicio, LocalDate fechaFin);
 
+    /**
+     * Recupera todos los fichajes de una empresa en un rango de fechas.
+     * @param idEmpresa El ID de la empresa.
+     * @param fechaInicio Fecha de inicio del periodo.
+     * @param fechaFin Fecha de fin del periodo.
+     * @return Lista de fichajes de todos los empleados de la empresa en ese periodo.
+     */
     List<Fichaje> findByEmpleadoEmpresaIdEmpresaAndFechaBetween(Long idEmpresa, LocalDate fechaInicio, LocalDate fechaFin);
 
+    /**
+     * Obtiene un ranking de los empleados con más retrasos (fichajes marcados "fuera de horario").
+     * @param idEmpresa El ID de la empresa.
+     * @return Lista de arrays de objetos conteniendo el nombre del empleado y el número de retrasos.
+     */
     @Query("SELECT f.empleado.nombre, COUNT(f) " +
             "FROM Fichaje f " +
             "WHERE f.empleado.empresa.idEmpresa = :idEmpresa " +

@@ -8,6 +8,9 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * DTO para la petición de actualización de los datos de un empleado.
+ */
 @Data
 @Builder
 @NoArgsConstructor

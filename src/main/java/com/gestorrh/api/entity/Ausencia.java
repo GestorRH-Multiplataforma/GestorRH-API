@@ -14,7 +14,6 @@ import java.time.LocalDate;
 
 /**
  * Entidad que representa una solicitud de ausencia o permiso de un empleado.
- * Épica E6 - Gestión de Ausencias.
  */
 @Entity
 @Table(name = "ausencia")
@@ -51,7 +50,6 @@ public class Ausencia {
     @Column(name = "fecha_fin", nullable = false)
     private LocalDate fechaFin;
 
-    // TODO (Deuda Técnica): Actualmente recibe un String. En el futuro se implementará subida de ficheros (MultipartFile).
     @Column(name = "justificante", length = 500)
     private String justificante;
 

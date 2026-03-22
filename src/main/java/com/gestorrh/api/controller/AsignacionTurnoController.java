@@ -15,7 +15,9 @@ import java.util.Arrays;
 import java.util.List;
 
 /**
- * Controlador REST para la gestión de Asignaciones de Turnos (Épica E5).
+ * Controlador REST para la gestión de asignaciones de turnos de trabajo a empleados.
+ * Permite la planificación de horarios, la consulta de asignaciones propias y generales,
+ * así como la modificación y eliminación de estas por parte de usuarios autorizados.
  */
 @RestController
 @RequestMapping("/api/asignaciones")
@@ -25,9 +27,13 @@ public class AsignacionTurnoController {
     private final AsignacionTurnoService asignacionService;
 
     /**
-     * Crea una nueva asignación de turno.
-     * Solo para EMPRESA o SUPERVISOR (usamos validación programática en el Service para el rol exacto de empleado).
-     * URL: POST http://localhost:8080/api/asignaciones
+     * Registra una nueva asignación de turno para un empleado específico.
+     * Este endpoint es utilizado por perfiles con capacidad de planificación (Empresa o Supervisores).
+     *
+     * URL de acceso: {@code POST http://localhost:8080/api/asignaciones}
+     *
+     * @param peticion DTO con los detalles de la asignación (empleado, turno, fecha, modalidad).
+     * @return ResponseEntity con el {@link RespuestaAsignacionTurnoDTO} creado y estado 201 (Created).
      */
     @PostMapping
     @PreAuthorize("hasAnyRole('EMPRESA', 'EMPLEADO')")
@@ -37,9 +43,13 @@ public class AsignacionTurnoController {
     }
 
     /**
-     * Obtiene el listado de asignaciones.
-     * La EMPRESA ve todas. El SUPERVISOR ve las de su departamento.
-     * URL: GET http://localhost:8080/api/asignaciones
+     * Obtiene el listado de asignaciones de turno según los permisos del usuario.
+     * Las organizaciones con rol 'EMPRESA' visualizan todas las asignaciones, mientras
+     * que los supervisores acceden a las de su ámbito de responsabilidad.
+     *
+     * URL de acceso: {@code GET http://localhost:8080/api/asignaciones}
+     *
+     * @return ResponseEntity con la lista de {@link RespuestaAsignacionTurnoDTO} permitidas.
      */
     @GetMapping
     @PreAuthorize("hasAnyRole('EMPRESA', 'EMPLEADO')")
@@ -49,8 +59,12 @@ public class AsignacionTurnoController {
     }
 
     /**
-     * Obtiene el listado de asignaciones exclusivas del empleado logueado.
-     * URL: GET http://localhost:8080/api/asignaciones/me
+     * Recupera el listado exclusivo de asignaciones de turno para el empleado autenticado.
+     * Permite al trabajador conocer su planificación horaria personal.
+     *
+     * URL de acceso: {@code GET http://localhost:8080/api/asignaciones/me}
+     *
+     * @return ResponseEntity con la lista de {@link RespuestaAsignacionTurnoDTO} del usuario logueado.
      */
     @GetMapping("/me")
     @PreAuthorize("hasRole('EMPLEADO')")
@@ -60,8 +74,14 @@ public class AsignacionTurnoController {
     }
 
     /**
-     * Modifica una asignación existente, requiriendo motivo de cambio (Auditoría).
-     * URL: PUT http://localhost:8080/api/asignaciones/{id}
+     * Modifica una asignación de turno previamente registrada.
+     * Requiere la especificación de un motivo para el cambio con fines de auditoría.
+     *
+     * URL de acceso: {@code PUT http://localhost:8080/api/asignaciones/{id}}
+     *
+     * @param id Identificador único de la asignación a modificar.
+     * @param peticion DTO con los nuevos datos de la asignación y el motivo del cambio.
+     * @return ResponseEntity con el {@link RespuestaAsignacionTurnoDTO} actualizado.
      */
     @PutMapping("/{id}")
     @PreAuthorize("hasAnyRole('EMPRESA', 'EMPLEADO')")
@@ -73,8 +93,13 @@ public class AsignacionTurnoController {
     }
 
     /**
-     * Elimina físicamente una asignación.
-     * URL: DELETE http://localhost:8080/api/asignaciones/{id}
+     * Elimina de forma permanente una asignación de turno del sistema.
+     * Esta operación es destructiva y debe usarse para correcciones de planificación.
+     *
+     * URL de acceso: {@code DELETE http://localhost:8080/api/asignaciones/{id}}
+     *
+     * @param id Identificador único de la asignación a eliminar.
+     * @return ResponseEntity con cuerpo vacío y estado 204 (No Content).
      */
     @DeleteMapping("/{id}")
     @PreAuthorize("hasAnyRole('EMPRESA', 'EMPLEADO')")
@@ -84,8 +109,12 @@ public class AsignacionTurnoController {
     }
 
     /**
-     * Endpoint de diccionario para el Frontend: Obtiene las modalidades de turno.
-     * URL: GET http://localhost:8080/api/asignaciones/modalidades
+     * Proporciona el listado de modalidades de turno disponibles (Presencial, Teletrabajo, etc.).
+     * Sirve como endpoint de diccionario para la interfaz de usuario.
+     *
+     * URL de acceso: {@code GET http://localhost:8080/api/asignaciones/modalidades}
+     *
+     * @return ResponseEntity con una lista de los valores del enum {@link ModalidadTurno}.
      */
     @GetMapping("/modalidades")
     @PreAuthorize("hasAnyRole('EMPRESA', 'EMPLEADO')")

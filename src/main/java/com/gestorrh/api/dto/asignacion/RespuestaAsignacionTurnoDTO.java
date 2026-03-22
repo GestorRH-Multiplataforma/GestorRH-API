@@ -10,6 +10,9 @@ import lombok.Setter;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
+/**
+ * DTO para la respuesta con los datos de una asignación de turno.
+ */
 @Getter
 @Setter
 @NoArgsConstructor
