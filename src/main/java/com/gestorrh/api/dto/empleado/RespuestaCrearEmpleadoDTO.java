@@ -6,6 +6,9 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * DTO para la respuesta tras crear exitosamente un empleado.
+ */
 @Data
 @Builder
 @NoArgsConstructor

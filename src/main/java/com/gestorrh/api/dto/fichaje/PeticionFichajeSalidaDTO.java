@@ -6,6 +6,9 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * DTO para la petición de un fichaje de salida.
+ */
 @Data
 @Builder
 @NoArgsConstructor

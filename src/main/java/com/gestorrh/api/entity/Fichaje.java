@@ -11,6 +11,9 @@ import lombok.Setter;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
+/**
+ * Entidad que registra las entradas y salidas diarias de un empleado.
+ */
 @Entity
 @Table(name = "fichaje")
 @Getter

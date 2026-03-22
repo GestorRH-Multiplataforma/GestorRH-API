@@ -9,6 +9,9 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * DTO para la petición de creación de un nuevo empleado.
+ */
 @Data
 @Builder
 @NoArgsConstructor

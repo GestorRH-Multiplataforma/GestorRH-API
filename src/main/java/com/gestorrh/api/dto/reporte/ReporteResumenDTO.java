@@ -5,6 +5,9 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * DTO para el resumen de reportes por empleado.
+ */
 @Data
 @Builder
 @NoArgsConstructor

@@ -8,6 +8,9 @@ import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 
+/**
+ * DTO para solicitar la modificación de un fichaje existente.
+ */
 @Data
 @Builder
 @NoArgsConstructor

@@ -8,6 +8,9 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+/**
+ * DTO para la revisión (aprobación/rechazo) de una ausencia.
+ */
 @Getter
 @Setter
 @NoArgsConstructor

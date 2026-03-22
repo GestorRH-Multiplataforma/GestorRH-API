@@ -16,7 +16,18 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Servicio encargado de gestionar la lógica de autenticación (Login).
+ * Servicio encargado de orquestar los procesos de autenticación y seguridad de acceso.
+ * <p>
+ * Proporciona métodos específicos para el inicio de sesión de empresas y empleados,
+ * validando credenciales cifradas y estados de cuenta (actividad y vigencia de contratos).
+ * </p>
+ * <p>
+ * Tras una autenticación exitosa, genera tokens de acceso seguros (JWT) enriquecidos
+ * con los {@code Claims} necesarios para la autorización basada en roles dentro de la API.
+ * </p>
+ *
+ * @see com.gestorrh.api.security.ServicioJwt
+ * @see com.gestorrh.api.dto.autenticacion.RespuestaLoginDTO
  */
 @Service
 @RequiredArgsConstructor
@@ -29,7 +40,16 @@ public class AutenticacionService {
     private final ServicioJwt servicioJwt;
 
     /**
-     * Lógica para el login de una Empresa.
+     * Realiza la autenticación centralizada para el perfil de Empresa.
+     * <p>
+     * El proceso verifica la existencia de la cuenta por email y valida la contraseña 
+     * mediante el codificador configurado. Si el acceso es válido, se emite un token JWT 
+     * que contiene la identidad de la empresa y su rol administrativo.
+     * </p>
+     *
+     * @param request Objeto {@link PeticionLoginDTO} con las credenciales de la empresa.
+     * @return {@link RespuestaLoginDTO} que incluye el token de sesión y los datos de perfil básicos.
+     * @throws RuntimeException Si el correo no existe o la contraseña es errónea.
      */
     public RespuestaLoginDTO loginEmpresa(PeticionLoginDTO request) {
 
@@ -61,7 +81,23 @@ public class AutenticacionService {
     }
 
     /**
-     * Lógica para el login de un Empleado.
+     * Realiza el proceso de autenticación integral para un Empleado.
+     * <p>
+     * Además de la validación estándar de credenciales, este método aplica reglas de negocio 
+     * críticas sobre el estado de la cuenta:
+     * </p>
+     * <ul>
+     *   <li>Verifica que el flag {@code activo} sea verdadero.</li>
+     *   <li>Comprueba que la {@code fechaBajaContrato} no haya sido superada (Contrato vigente).</li>
+     * </ul>
+     * <p>
+     * Si todas las validaciones son exitosas, emite un token JWT enriquecido con 
+     * el rol específico (EMPLEADO, SUPERVISOR), el ID del empleado y el ID de su empresa.
+     * </p>
+     *
+     * @param peticion Objeto {@link PeticionLoginDTO} con el email y password del trabajador.
+     * @return {@link RespuestaLoginDTO} con el token de acceso y la información de perfil para el frontend.
+     * @throws RuntimeException Si las credenciales fallan o si el empleado tiene el acceso bloqueado por cese laboral.
      */
     public RespuestaLoginDTO loginEmpleado(PeticionLoginDTO peticion) {
 

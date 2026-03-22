@@ -22,5 +22,4 @@ public class RespuestaTurnoDTO {
     private String descripcion;
     private LocalTime horaInicio;
     private LocalTime horaFin;
-    // NOTA: No devolvemos la Empresa aquí porque el cliente (la Empresa logueada) ya sabe quién es.
 }

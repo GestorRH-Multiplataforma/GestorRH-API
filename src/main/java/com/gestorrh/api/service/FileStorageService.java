@@ -17,12 +17,31 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 
+/**
+ * Servicio encargado de la gestión de almacenamiento de archivos en el sistema de ficheros local del servidor.
+ * <p>
+ * Proporciona funcionalidades para la subida segura, recuperación y borrado de archivos, 
+ * implementando mecanismos de defensa contra ataques de tipo <i>Path Traversal</i> 
+ * y restricciones estrictas sobre las extensiones de archivos permitidas.
+ * </p>
+ * <p>
+ * Los archivos se almacenan bajo nombres únicos generados automáticamente para evitar
+ * conflictos y garantizar la privacidad.
+ * </p>
+ */
 @Service
 public class FileStorageService {
 
     private final Path fileStorageLocation;
     private final List<String> extensionesPermitidas = Arrays.asList("pdf", "jpg", "jpeg", "png");
 
+    /**
+     * Inicializa el servicio configurando el directorio raíz donde se almacenarán los archivos.
+     * Si el directorio no existe, intenta crearlo de forma recursiva.
+     *
+     * @param uploadDir Ruta del directorio de subida (inyectada desde la configuración de la aplicación).
+     * @throws RuntimeException Si el directorio no puede ser creado por falta de permisos o errores de E/S.
+     */
     public FileStorageService(@Value("${file.upload-dir}") String uploadDir) {
         this.fileStorageLocation = Paths.get(uploadDir).toAbsolutePath().normalize();
         try {
@@ -32,6 +51,23 @@ public class FileStorageService {
         }
     }
 
+    /**
+     * Almacena de forma física un archivo recibido mediante una petición HTTP Multipart.
+     * <p>
+     * El proceso de guardado incluye:
+     * </p>
+     * <ol>
+     *   <li>Limpieza y normalización de la ruta del archivo original.</li>
+     *   <li>Validación contra ataques de secuencia de punto-punto (Path Traversal).</li>
+     *   <li>Verificación de la extensión del archivo contra una lista blanca permitida.</li>
+     *   <li>Generación de un identificador único universal (UUID) para el nombre del archivo.</li>
+     *   <li>Copia binaria del flujo de entrada en la ubicación de almacenamiento configurada.</li>
+     * </ol>
+     *
+     * @param file El objeto {@link MultipartFile} que contiene el flujo binario y metadatos del archivo original.
+     * @return String El nombre único generado (UUID + extensión) bajo el cual el archivo ha sido persistido.
+     * @throws RuntimeException Si el archivo es nulo, tiene una extensión no autorizada o si ocurre un error de E/S.
+     */
     public String guardarArchivo(MultipartFile file) {
         String originalFileName = StringUtils.cleanPath(file.getOriginalFilename());
 
@@ -56,6 +92,14 @@ public class FileStorageService {
         }
     }
 
+    /**
+     * Recupera un archivo del almacenamiento local como un recurso cargable.
+     * Se utiliza para servir archivos (ej. justificantes o imágenes) a través de la API.
+     *
+     * @param fileName Nombre del archivo que se desea recuperar.
+     * @return Resource Objeto cargable que representa el contenido del archivo.
+     * @throws RuntimeException Si el archivo no existe o la ruta está mal formada.
+     */
     public Resource cargarArchivoComoRecurso(String fileName) {
         try {
             Path filePath = this.fileStorageLocation.resolve(fileName).normalize();
@@ -70,6 +114,12 @@ public class FileStorageService {
         }
     }
 
+    /**
+     * Elimina de forma definitiva un archivo del sistema de ficheros.
+     * Se utiliza habitualmente al actualizar archivos antiguos o al borrar registros asociados.
+     *
+     * @param fileName Nombre del archivo físico que se pretende eliminar.
+     */
     public void eliminarArchivo(String fileName) {
         if (fileName != null && !fileName.isEmpty()) {
             try {
@@ -81,6 +131,12 @@ public class FileStorageService {
         }
     }
 
+    /**
+     * Utilidad privada para extraer la extensión de un nombre de archivo completo.
+     *
+     * @param fileName Nombre original del archivo (ej. "justificante.pdf").
+     * @return String La extensión del archivo (ej. "pdf"), o una cadena vacía si no tiene.
+     */
     private String obtenerExtension(String fileName) {
         if (fileName != null && fileName.lastIndexOf(".") > 0) {
             return fileName.substring(fileName.lastIndexOf(".") + 1);

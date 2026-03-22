@@ -20,7 +20,16 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 /**
- * Servicio principal para la Épica E6: Gestión de Ausencias.
+ * Servicio encargado de gestionar el flujo completo de ausencias y vacaciones de los empleados.
+ * <p>
+ * Cubre el ciclo de vida de la ausencia: desde la solicitud inicial por parte del empleado 
+ * (incluyendo la gestión de justificantes en el sistema de ficheros), hasta la revisión,
+ * aprobación o rechazo por parte de los responsables correspondientes.
+ * </p>
+ * <p>
+ * El sistema integra validaciones automáticas de solapamientos temporales y gestiona 
+ * la limpieza automática del calendario laboral al aprobar periodos de descanso.
+ * </p>
  */
 @Service
 @RequiredArgsConstructor
@@ -33,8 +42,14 @@ public class AusenciaService {
     private final AsignacionTurnoRepository asignacionRepository;
     private final FileStorageService fileStorageService;
 
-    // MÉTODOS DEL EMPLEADO
-
+    /**
+     * Permite a un empleado registrar una nueva solicitud de ausencia.
+     * Valida que no existan solapamientos con otras ausencias activas y almacena el archivo justificante si se adjunta.
+     *
+     * @param peticion DTO con las fechas y el tipo de ausencia.
+     * @param archivo Archivo opcional (justificante médico, etc.) en formato Multipart.
+     * @return {@link RespuestaAusenciaDTO} con la solicitud recién creada en estado PENDIENTE.
+     */
     @Transactional
     public RespuestaAusenciaDTO crearAusencia(PeticionAusenciaDTO peticion, org.springframework.web.multipart.MultipartFile archivo) {
         Empleado empleadoLogueado = obtenerEmpleadoAutenticado();
@@ -64,6 +79,13 @@ public class AusenciaService {
         return mapearARespuesta(nuevaAusencia);
     }
 
+    /**
+     * Recupera el historial de ausencias del empleado autenticado.
+     * Permite el filtrado por estado de la solicitud.
+     *
+     * @param estadoFiltro Estado opcional (SOLICITADA, APROBADA, RECHAZADA) para filtrar la búsqueda.
+     * @return List de {@link RespuestaAusenciaDTO} con las solicitudes propias del empleado.
+     */
     @Transactional(readOnly = true)
     public List<RespuestaAusenciaDTO> obtenerMisAusencias(EstadoAusencia estadoFiltro) {
         Empleado empleadoLogueado = obtenerEmpleadoAutenticado();
@@ -78,6 +100,15 @@ public class AusenciaService {
         return misAusencias.stream().map(this::mapearARespuesta).collect(Collectors.toList());
     }
 
+    /**
+     * Permite al empleado modificar una solicitud de ausencia que todavía no ha sido procesada.
+     * Si la solicitud ya ha sido aprobada o rechazada, la modificación queda prohibida.
+     *
+     * @param idAusencia Identificador de la ausencia a editar.
+     * @param peticion Nuevos datos para la solicitud.
+     * @param archivoNuevo Nuevo archivo justificante (reemplaza al anterior si existe).
+     * @return {@link RespuestaAusenciaDTO} con la ausencia actualizada.
+     */
     @Transactional
     public RespuestaAusenciaDTO actualizarMiAusencia(Long idAusencia, PeticionAusenciaDTO peticion, org.springframework.web.multipart.MultipartFile archivoNuevo) {
         Empleado empleadoLogueado = obtenerEmpleadoAutenticado();
@@ -111,6 +142,11 @@ public class AusenciaService {
         return mapearARespuesta(ausencia);
     }
 
+    /**
+     * Elimina definitivamente una solicitud de ausencia en estado pendiente.
+     *
+     * @param idAusencia Identificador de la solicitud a cancelar.
+     */
     @Transactional
     public void eliminarMiAusencia(Long idAusencia) {
         Empleado empleadoLogueado = obtenerEmpleadoAutenticado();
@@ -129,8 +165,14 @@ public class AusenciaService {
         log.info("AUSENCIA CANCELADA: El empleado '{}' ha eliminado su solicitud de ausencia ID {}.", empleadoLogueado.getEmail(), idAusencia);
     }
 
-    // MÉTODOS DE LA EMPRESA Y SUPERVISORES
-
+    /**
+     * Recupera la lista de ausencias que el usuario autenticado tiene permiso para revisar.
+     * - EMPRESA: Ve todas las ausencias de sus empleados.
+     * - SUPERVISOR: Ve ausencias de los empleados de su mismo departamento (exceptuando la suya).
+     *
+     * @param estadoFiltro Estado opcional para la consulta.
+     * @return List de {@link RespuestaAusenciaDTO} con las solicitudes pendientes de gestión.
+     */
     @Transactional(readOnly = true)
     public List<RespuestaAusenciaDTO> obtenerAusenciasPermitidas(EstadoAusencia estadoFiltro) {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
@@ -164,6 +206,25 @@ public class AusenciaService {
         return ausencias.stream().map(this::mapearARespuesta).collect(Collectors.toList());
     }
 
+    /**
+     * Procesa la revisión de una solicitud de ausencia (Aprobar o Rechazar).
+     * <p>
+     * <b>Lógica de Negocio al Aprobar:</b>
+     * Si la ausencia es aprobada, el sistema localiza y elimina automáticamente cualquier 
+     * asignación de turno que el empleado tuviera planificada en el rango de fechas de la ausencia,
+     * garantizando la coherencia del calendario operativo.
+     * </p>
+     * <p>
+     * <b>Requisito de Rechazo:</b>
+     * Si el responsable decide rechazar la solicitud, es obligatorio proporcionar una descripción
+     * en el campo de observaciones con los motivos de la denegación.
+     * </p>
+     *
+     * @param idAusencia Identificador único de la solicitud de ausencia a gestionar.
+     * @param peticion Objeto {@link PeticionRevisionAusenciaDTO} con el nuevo estado y comentarios.
+     * @return {@link RespuestaAusenciaDTO} con el resultado final de la revisión persistido.
+     * @throws RuntimeException Si falta justificación en un rechazo o si el revisor no tiene autoridad suficiente.
+     */
     @Transactional
     public RespuestaAusenciaDTO revisarAusencia(Long idAusencia, PeticionRevisionAusenciaDTO peticion) {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
@@ -206,14 +267,24 @@ public class AusenciaService {
         return mapearARespuesta(ausencia);
     }
 
-    // MÉTODOS PRIVADOS
-
+    /**
+     * Obtiene el empleado autenticado a partir del contexto de seguridad.
+     *
+     * @return Empleado que realiza la acción.
+     */
     private Empleado obtenerEmpleadoAutenticado() {
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
         return empleadoRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("Empleado no encontrado"));
     }
 
+    /**
+     * Valida que una ausencia exista y pertenezca efectivamente al empleado que la consulta.
+     *
+     * @param idAusencia Identificador de la ausencia.
+     * @param empleadoLogueado Empleado que realiza la consulta.
+     * @return {@link Ausencia} Entidad recuperada.
+     */
     private Ausencia obtenerAusenciaPropia(Long idAusencia, Empleado empleadoLogueado) {
         Ausencia ausencia = ausenciaRepository.findById(idAusencia)
                 .orElseThrow(() -> new RuntimeException("Ausencia no encontrada"));
@@ -224,12 +295,26 @@ public class AusenciaService {
         return ausencia;
     }
 
+    /**
+     * Comprueba la coherencia cronológica entre la fecha de inicio y la de fin.
+     *
+     * @param inicio Fecha inicial.
+     * @param fin Fecha final.
+     */
     private void validarFechas(java.time.LocalDate inicio, java.time.LocalDate fin) {
         if (inicio.isAfter(fin)) {
             throw new RuntimeException("La fecha de inicio no puede ser posterior a la fecha de fin.");
         }
     }
 
+    /**
+     * Verifica que el revisor tenga los permisos necesarios para gestionar la ausencia de un empleado.
+     * Controla la jurisdicción multi-empresa y multi-departamento.
+     *
+     * @param emailAuth Email del revisor.
+     * @param esEmpresa Booleano indicando si el revisor tiene rol de empresa.
+     * @param empleadoDestino Empleado cuya ausencia se está revisando.
+     */
     private void validarPrivilegiosRevision(String emailAuth, boolean esEmpresa, Empleado empleadoDestino) {
         if (esEmpresa) {
             Empresa empresa = empresaRepository.findByEmail(emailAuth).orElseThrow();
@@ -253,6 +338,14 @@ public class AusenciaService {
         }
     }
 
+    /**
+     * Asegura que no existan solicitudes de ausencia activas (Pendientes o Aprobadas) que colisionen en el tiempo.
+     *
+     * @param idEmpleado ID del trabajador.
+     * @param inicio Fecha de inicio de la nueva solicitud.
+     * @param fin Fecha de fin de la nueva solicitud.
+     * @param idAusenciaExcluida ID para excluir de la validación (usado en actualizaciones).
+     */
     private void validarSolapamientoAusencias(Long idEmpleado, java.time.LocalDate inicio, java.time.LocalDate fin, Long idAusenciaExcluida) {
         List<EstadoAusencia> estadosActivos = List.of(EstadoAusencia.SOLICITADA, EstadoAusencia.APROBADA);
 
@@ -269,6 +362,12 @@ public class AusenciaService {
         }
     }
 
+    /**
+     * Convierte la entidad de base de datos {@link Ausencia} a su correspondiente DTO de respuesta.
+     *
+     * @param a Entidad a mapear.
+     * @return {@link RespuestaAusenciaDTO} formateado.
+     */
     private RespuestaAusenciaDTO mapearARespuesta(Ausencia a) {
         return RespuestaAusenciaDTO.builder()
                 .idAusencia(a.getIdAusencia())

@@ -9,7 +9,7 @@ import java.time.LocalDate;
 
 /**
  * DTO Plano (sin anidaciones) diseñado específicamente para ser
- * inyectado en JasperReports o tablas de interfaces gráficas.
+ * inyectado en OpenPdf o tablas de interfaces gráficas.
  */
 @Data
 @Builder

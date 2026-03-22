@@ -25,3 +25,15 @@ jobs:
         env:
           SPRING_PROFILES_ACTIVE: test
         run: mvn clean test
+
+      - name: Generar Documentación Javadoc
+        if: github.ref == 'refs/heads/main'
+        run: mvn javadoc:javadoc
+
+      - name: Desplegar en GitHub Pages
+        if: github.ref == 'refs/heads/main'
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./target/site/apidocs
+          commit_message: "docs: actualizacion automatica de Javadoc"

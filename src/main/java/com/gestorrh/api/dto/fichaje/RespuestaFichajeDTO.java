@@ -8,6 +8,9 @@ import lombok.NoArgsConstructor;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
+/**
+ * DTO para la respuesta con los detalles de un fichaje.
+ */
 @Data
 @Builder
 @NoArgsConstructor

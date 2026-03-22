@@ -5,6 +5,9 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * DTO para la respuesta de datos de una empresa.
+ */
 @Data
 @Builder
 @NoArgsConstructor

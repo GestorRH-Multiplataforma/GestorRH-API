@@ -14,8 +14,12 @@ import java.util.Arrays;
 import java.util.List;
 
 /**
- * Controlador REST para la gestión de Empleados.
- * Todos los endpoints de esta clase requerirán un token válido.
+ * Controlador REST para la gestión integral de Empleados dentro de una organización.
+ * Proporciona endpoints para el alta, listado, actualización, baja y readmisión de empleados,
+ * así como la gestión del perfil propio por parte de los mismos.
+ *
+ * Todas las operaciones en este controlador requieren un token de autenticación válido
+ * y los permisos correspondientes según el rol del usuario (Empresa o Empleado).
  */
 @RestController
 @RequestMapping("/api/empleados")
@@ -25,9 +29,14 @@ public class EmpleadoController {
     private final EmpleadoService empleadoService;
 
     /**
-     * Endpoint para dar de alta a un nuevo empleado.
-     * SOLO accesible para usuarios con el rol EMPRESA.
-     * URL: POST http://localhost:8080/api/empleados
+     * Endpoint para dar de alta un nuevo empleado en la empresa autenticada.
+     * Únicamente accesible para usuarios con el rol de 'EMPRESA'.
+     * Tras el alta, el sistema genera automáticamente una contraseña para el empleado.
+     *
+     * URL de acceso: {@code POST http://localhost:8080/api/empleados}
+     *
+     * @param peticion DTO con los datos personales y contractuales del nuevo empleado.
+     * @return ResponseEntity con el objeto {@link RespuestaCrearEmpleadoDTO} que incluye la contraseña generada y estado 201 (Created).
      */
     @PostMapping
     @PreAuthorize("hasRole('EMPRESA')")
@@ -40,9 +49,12 @@ public class EmpleadoController {
     }
 
     /**
-     * Endpoint para listar todos los empleados de la empresa logueada.
-     * SOLO accesible para usuarios con el rol EMPRESA.
-     * URL: GET http://localhost:8080/api/empleados
+     * Obtiene el listado completo de empleados pertenecientes a la empresa autenticada.
+     * Únicamente accesible para usuarios con el rol de 'EMPRESA'.
+     *
+     * URL de acceso: {@code GET http://localhost:8080/api/empleados}
+     *
+     * @return ResponseEntity con una lista de {@link RespuestaEmpleadoDTO} y estado 200 (OK).
      */
     @GetMapping
     @PreAuthorize("hasRole('EMPRESA')")
@@ -53,9 +65,14 @@ public class EmpleadoController {
     }
 
     /**
-     * Endpoint para actualizar los datos de un empleado existente.
-     * SOLO accesible para usuarios con el rol EMPRESA.
-     * URL: PUT http://localhost:8080/api/empleados/{id}
+     * Actualiza la información de un empleado existente identificado por su ID.
+     * Únicamente accesible para usuarios con el rol de 'EMPRESA'.
+     *
+     * URL de acceso: {@code PUT http://localhost:8080/api/empleados/{id}}
+     *
+     * @param id Identificador único del empleado a modificar.
+     * @param peticion DTO con los nuevos datos a actualizar en la ficha del empleado.
+     * @return ResponseEntity con el {@link RespuestaEmpleadoDTO} actualizado y estado 200 (OK).
      */
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('EMPRESA')")
@@ -67,6 +84,16 @@ public class EmpleadoController {
         return ResponseEntity.ok(respuesta);
     }
 
+    /**
+     * Tramita la baja contractual de un empleado en una fecha determinada.
+     * El empleado dejará de tener acceso al sistema a partir de dicha fecha.
+     *
+     * URL de acceso: {@code POST http://localhost:8080/api/empleados/{id}/baja}
+     *
+     * @param id Identificador único del empleado que causa baja.
+     * @param peticion DTO que contiene la fecha efectiva de la baja del contrato.
+     * @return ResponseEntity con cuerpo vacío y estado 204 (No Content) tras procesar la baja.
+     */
     @PostMapping("/{id}/baja")
     @PreAuthorize("hasRole('EMPRESA')")
     public ResponseEntity<Void> darDeBaja(
@@ -78,9 +105,14 @@ public class EmpleadoController {
     }
 
     /**
-     * Endpoint para readmitir a un empleado que estaba de baja.
-     * Elimina su fecha de baja y le genera una nueva contraseña.
-     * URL: POST http://localhost:8080/api/empleados/{id}/readmitir
+     * Reinstaura a un empleado que se encontraba previamente de baja.
+     * Elimina la restricción de acceso, limpia la fecha de baja y genera una nueva contraseña.
+     * Únicamente accesible para usuarios con el rol de 'EMPRESA'.
+     *
+     * URL de acceso: {@code POST http://localhost:8080/api/empleados/{id}/readmitir}
+     *
+     * @param id Identificador único del empleado a readmitir.
+     * @return ResponseEntity con el objeto {@link RespuestaCrearEmpleadoDTO} y la nueva contraseña generada.
      */
     @PostMapping("/{id}/readmitir")
     @PreAuthorize("hasRole('EMPRESA')")
@@ -92,9 +124,12 @@ public class EmpleadoController {
     }
 
     /**
-     * Endpoint para que el empleado obtenga los datos de su propio perfil.
-     * SOLO accesible para usuarios con el rol EMPLEADO.
-     * URL: GET http://localhost:8080/api/empleados/me
+     * Permite al empleado autenticado consultar su propia información de perfil.
+     * Únicamente accesible para usuarios con el rol de 'EMPLEADO'.
+     *
+     * URL de acceso: {@code GET http://localhost:8080/api/empleados/me}
+     *
+     * @return ResponseEntity con el {@link RespuestaEmpleadoDTO} que representa el perfil del usuario logueado.
      */
     @GetMapping("/me")
     @PreAuthorize("hasRole('EMPLEADO')")
@@ -105,9 +140,13 @@ public class EmpleadoController {
     }
 
     /**
-     * Endpoint para que el empleado cambie su propia contraseña.
-     * SOLO accesible para usuarios con el rol EMPLEADO.
-     * URL: PUT http://localhost:8080/api/empleados/me/contrasena
+     * Permite al empleado autenticado actualizar su contraseña de acceso personal.
+     * Únicamente accesible para usuarios con el rol de 'EMPLEADO'.
+     *
+     * URL de acceso: {@code PUT http://localhost:8080/api/empleados/me/contrasena}
+     *
+     * @param peticion DTO que incluye la contraseña actual y la nueva contraseña elegida.
+     * @return ResponseEntity con cuerpo vacío y estado 204 (No Content) tras el cambio exitoso.
      */
     @PutMapping("/me/contrasena")
     @PreAuthorize("hasRole('EMPLEADO')")
@@ -120,8 +159,12 @@ public class EmpleadoController {
     }
 
     /**
-     * Endpoint de diccionario para el Frontend: Obtiene los roles disponibles.
-     * URL: GET http://localhost:8080/api/empleados/roles
+     * Proporciona el listado de todos los roles de empleado disponibles en el sistema.
+     * Sirve como endpoint de diccionario para facilitar la selección de roles en interfaces de usuario.
+     *
+     * URL de acceso: {@code GET http://localhost:8080/api/empleados/roles}
+     *
+     * @return ResponseEntity con una lista de los posibles valores del enum {@link RolEmpleado}.
      */
     @GetMapping("/roles")
     @PreAuthorize("hasAnyRole('EMPRESA', 'EMPLEADO')")

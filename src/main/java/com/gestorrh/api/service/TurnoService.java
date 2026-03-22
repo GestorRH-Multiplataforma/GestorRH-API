@@ -15,7 +15,20 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 /**
- * Servicio encargado de la lógica de negocio para la gestión del catálogo de Turnos.
+ * Servicio encargado de la gestión integral del catálogo de turnos dentro del sistema GestorRH.
+ * <p>
+ * Proporciona la lógica de negocio necesaria para la creación, consulta, actualización y
+ * eliminación de los diferentes tipos de turnos que una empresa puede configurar.
+ * El catálogo de turnos permite a la empresa definir sus propios horarios operativos (mañana, tarde, noche, etc.)
+ * para su posterior asignación a los empleados.
+ * </p>
+ * <p>
+ * Todos los métodos operan bajo el contexto de la empresa autenticada extraída del 
+ * {@link SecurityContextHolder} para garantizar un aislamiento total de los datos entre diferentes empresas (Seguridad Multi-tenant).
+ * </p>
+ * 
+ * @see com.gestorrh.api.entity.Turno
+ * @see com.gestorrh.api.repository.TurnoRepository
  */
 @Service
 @RequiredArgsConstructor
@@ -25,7 +38,16 @@ public class TurnoService {
     private final EmpresaRepository empresaRepository;
 
     /**
-     * Crea un nuevo tipo de turno para la empresa autenticada.
+     * Crea un nuevo tipo de turno dentro del catálogo de la empresa actualmente autenticada.
+     * <p>
+     * Antes de proceder con el guardado, se validan las reglas de negocio referentes a la coherencia horaria
+     * mediante el método {@link #validarHoras(PeticionTurnoDTO)}. El turno se vincula automáticamente
+     * a la entidad {@link Empresa} del usuario que ha iniciado sesión.
+     * </p>
+     *
+     * @param peticion Objeto de transferencia de datos con la descripción y el rango horario (inicio y fin) del turno.
+     * @return {@link RespuestaTurnoDTO} con la información del turno recién creado, incluyendo su identificador único generado por la base de datos.
+     * @throws RuntimeException Si la hora de inicio no es estrictamente anterior a la hora de fin.
      */
     @Transactional
     public RespuestaTurnoDTO crearTurno(PeticionTurnoDTO peticion) {
@@ -47,7 +69,13 @@ public class TurnoService {
     }
 
     /**
-     * Obtiene todos los turnos pertenecientes a la empresa autenticada.
+     * Recupera la lista completa de turnos que han sido definidos por la empresa que realiza la solicitud.
+     * <p>
+     * La búsqueda se filtra automáticamente utilizando el identificador único de la empresa obtenido del
+     * contexto de seguridad global. Se garantiza que una empresa no pueda ver los turnos configurados por otra.
+     * </p>
+     *
+     * @return List de {@link RespuestaTurnoDTO} que contiene todos los turnos disponibles y configurados para la empresa solicitante.
      */
     @Transactional(readOnly = true)
     public List<RespuestaTurnoDTO> obtenerTurnosDeEmpresa() {
@@ -62,7 +90,17 @@ public class TurnoService {
     }
 
     /**
-     * Actualiza la información de un turno existente.
+     * Modifica los datos de un turno ya existente en la base de datos.
+     * <p>
+     * El sistema realiza una comprobación de propiedad: verifica que el turno pertenezca efectivamente 
+     * a la empresa que está realizando la petición. Si el turno existe pero pertenece a otra empresa,
+     * se deniega el acceso por motivos de seguridad.
+     * </p>
+     *
+     * @param idTurno Identificador único del turno que se desea actualizar.
+     * @param peticion Nuevos datos (descripción, hora de inicio y hora de fin) para el turno.
+     * @return {@link RespuestaTurnoDTO} con la información actualizada y persistida del turno.
+     * @throws RuntimeException Si el turno no existe en la base de datos o si no pertenece a la empresa autenticada.
      */
     @Transactional
     public RespuestaTurnoDTO actualizarTurno(Long idTurno, PeticionTurnoDTO peticion) {
@@ -87,7 +125,15 @@ public class TurnoService {
     }
 
     /**
-     * Elimina físicamente un turno de la base de datos.
+     * Realiza el borrado físico de un turno del catálogo del sistema.
+     * <p>
+     * Al igual que en el proceso de actualización, se valida estrictamente que el turno sea propiedad 
+     * de la empresa autenticada. Es importante tener en cuenta que el borrado puede fallar si existen
+     * asignaciones de turnos vinculadas a este registro (Integridad Referencial).
+     * </p>
+     *
+     * @param idTurno Identificador único del turno que se pretende eliminar de forma definitiva.
+     * @throws RuntimeException Si el turno no se encuentra o el acceso es denegado por falta de permisos de propiedad.
      */
     @Transactional
     public void eliminarTurno(Long idTurno) {
@@ -104,20 +150,39 @@ public class TurnoService {
         turnoRepository.delete(turno);
     }
 
-    // MÉTODOS PRIVADOS AUXILIARES
-
+    /**
+     * Recupera la entidad Empresa asociada al usuario que ha iniciado sesión actualmente.
+     * Utiliza el email extraído del SecurityContextHolder para realizar la búsqueda en el repositorio.
+     *
+     * @return {@link Empresa} Entidad que representa a la empresa autenticada.
+     * @throws RuntimeException Si no se encuentra ninguna empresa con el correo electrónico del contexto de seguridad.
+     */
     private Empresa obtenerEmpresaAutenticada() {
         String correoEmpresaAuth = SecurityContextHolder.getContext().getAuthentication().getName();
         return empresaRepository.findByEmail(correoEmpresaAuth)
                 .orElseThrow(() -> new RuntimeException("Empresa no encontrada en el sistema"));
     }
 
+    /**
+     * Realiza la validación de las reglas de negocio horarias para un turno.
+     * Comprueba fundamentalmente que la hora de inicio sea anterior a la hora de finalización.
+     *
+     * @param peticion DTO que contiene las horas a validar.
+     * @throws RuntimeException Si la hora de inicio no es estrictamente anterior a la hora de fin.
+     */
     private void validarHoras(PeticionTurnoDTO peticion) {
         if (!peticion.getHoraInicio().isBefore(peticion.getHoraFin())) {
             throw new RuntimeException("Regla de negocio violada: La hora de inicio debe ser estrictamente anterior a la hora de fin.");
         }
     }
 
+    /**
+     * Convierte la entidad de base de datos {@link Turno} en un objeto de respuesta DTO.
+     * Se utiliza para desacoplar la capa de persistencia de la capa de presentación.
+     *
+     * @param turno Entidad Turno a ser mapeada.
+     * @return {@link RespuestaTurnoDTO} con los datos formateados para ser devueltos por la API.
+     */
     private RespuestaTurnoDTO mapearARespuesta(Turno turno) {
         return RespuestaTurnoDTO.builder()
                 .idTurno(turno.getIdTurno())

@@ -15,8 +15,11 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 /**
- * Clase central de configuración de seguridad de la aplicación.
- * Aquí dictamos las reglas de quién puede entrar y cómo encriptamos las contraseñas.
+ * Clase de configuración global de seguridad de Spring Security.
+ * <p>
+ * Define las políticas de acceso a los diferentes endpoints de la API, la gestión de sesiones (sin estado),
+ * el codificador de contraseñas y la integración del filtro personalizado para tokens JWT.
+ * </p>
  */
 @Configuration
 @EnableWebSecurity
@@ -24,10 +27,18 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 @RequiredArgsConstructor
 public class ConfigSeguridad {
 
+    /**
+     * Filtro personalizado para la validación de tokens JWT.
+     */
     private final FiltroJwt filtroJwt;
 
     /**
-     * Herramienta para encriptar contraseñas.
+     * Define el bean para el codificador de contraseñas de la aplicación.
+     * <p>
+     * Utiliza el algoritmo {@link BCryptPasswordEncoder} para realizar el hashing seguro de las contraseñas.
+     * </p>
+     *
+     * @return Una instancia de {@link PasswordEncoder}.
      */
     @Bean
     public PasswordEncoder passwordCodificador() {
@@ -35,7 +46,18 @@ public class ConfigSeguridad {
     }
 
     /**
-     * Cadena de filtros de seguridad.
+     * Configura la cadena de filtros de seguridad (Security Filter Chain).
+     * <p>
+     * Define las siguientes reglas:
+     * 1. Deshabilitar CSRF al ser una API stateless.
+     * 2. Política de creación de sesiones STATELESS (sin sesión en servidor).
+     * 3. Permisos de acceso: rutas públicas para autenticación, registro y errores, el resto requiere autenticación.
+     * 4. Añadir el filtro {@link FiltroJwt} antes del filtro estándar de autenticación de Spring.
+     * </p>
+     *
+     * @param http El objeto {@link HttpSecurity} para configurar la seguridad web.
+     * @return La cadena de filtros configurada.
+     * @throws Exception Si ocurre algún error durante la configuración.
      */
     @Bean
     public SecurityFilterChain cadenaFiltrosSeguridad(HttpSecurity http) throws Exception {

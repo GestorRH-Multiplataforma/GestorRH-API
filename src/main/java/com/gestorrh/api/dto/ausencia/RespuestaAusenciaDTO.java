@@ -10,6 +10,9 @@ import lombok.Setter;
 
 import java.time.LocalDate;
 
+/**
+ * DTO para la respuesta con los datos detallados de una ausencia.
+ */
 @Getter
 @Setter
 @NoArgsConstructor

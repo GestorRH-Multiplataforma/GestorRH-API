@@ -10,6 +10,9 @@ import lombok.Setter;
 
 import java.time.LocalDate;
 
+/**
+ * DTO para la petición de asignar un turno a un empleado.
+ */
 @Getter
 @Setter
 @NoArgsConstructor

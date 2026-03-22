@@ -15,7 +15,6 @@ import java.util.List;
 
 /**
  * Entidad que representa los tipos de turno (Catálogo) configurados por una Empresa.
- * Épica E4 - Gestión de Turnos.
  */
 @Entity
 @Table(name = "turno")
