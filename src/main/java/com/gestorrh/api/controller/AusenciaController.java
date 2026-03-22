@@ -1,8 +1,8 @@
 package com.gestorrh.api.controller;
 
-import com.gestorrh.api.dto.ausenciaDTO.PeticionAusenciaDTO;
-import com.gestorrh.api.dto.ausenciaDTO.PeticionRevisionAusenciaDTO;
-import com.gestorrh.api.dto.ausenciaDTO.RespuestaAusenciaDTO;
+import com.gestorrh.api.dto.ausencia.PeticionAusenciaDTO;
+import com.gestorrh.api.dto.ausencia.PeticionRevisionAusenciaDTO;
+import com.gestorrh.api.dto.ausencia.RespuestaAusenciaDTO;
 import com.gestorrh.api.entity.enums.EstadoAusencia;
 import com.gestorrh.api.entity.enums.TipoAusencia;
 import com.gestorrh.api.service.AusenciaService;

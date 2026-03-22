@@ -1,7 +1,7 @@
 package com.gestorrh.api.service;
 
-import com.gestorrh.api.dto.asignacionDTO.PeticionAsignacionTurnoDTO;
-import com.gestorrh.api.dto.asignacionDTO.RespuestaAsignacionTurnoDTO;
+import com.gestorrh.api.dto.asignacion.PeticionAsignacionTurnoDTO;
+import com.gestorrh.api.dto.asignacion.RespuestaAsignacionTurnoDTO;
 import com.gestorrh.api.entity.*;
 import com.gestorrh.api.entity.enums.EstadoAusencia;
 import com.gestorrh.api.repository.*;

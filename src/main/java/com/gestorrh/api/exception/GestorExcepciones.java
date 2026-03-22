@@ -1,6 +1,6 @@
 package com.gestorrh.api.exception;
 
-import com.gestorrh.api.dto.RespuestaErrorDTO;
+import com.gestorrh.api.dto.error.RespuestaErrorDTO;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;

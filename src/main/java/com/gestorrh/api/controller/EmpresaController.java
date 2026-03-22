@@ -1,6 +1,6 @@
 package com.gestorrh.api.controller;
 
-import com.gestorrh.api.dto.empresaDTO.*;
+import com.gestorrh.api.dto.empresa.*;
 import com.gestorrh.api.service.EmpresaService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;

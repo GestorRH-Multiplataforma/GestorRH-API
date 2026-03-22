@@ -1,6 +1,6 @@
 package com.gestorrh.api.service;
 
-import com.gestorrh.api.dto.fichajeDTO.PeticionFichajeEntradaDTO;
+import com.gestorrh.api.dto.fichaje.PeticionFichajeEntradaDTO;
 import com.gestorrh.api.entity.AsignacionTurno;
 import com.gestorrh.api.entity.Empleado;
 import com.gestorrh.api.entity.Empresa;

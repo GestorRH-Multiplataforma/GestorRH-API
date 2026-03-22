@@ -1,6 +1,6 @@
 package com.gestorrh.api.service;
 
-import com.gestorrh.api.dto.estadisticasDTO.DatoGraficoDTO;
+import com.gestorrh.api.dto.estadisticas.DatoGraficoDTO;
 import com.gestorrh.api.repository.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;

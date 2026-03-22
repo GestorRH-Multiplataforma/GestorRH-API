@@ -1,7 +1,7 @@
 package com.gestorrh.api.service;
 
-import com.gestorrh.api.dto.autenticacionDTO.RespuestaLoginDTO;
-import com.gestorrh.api.dto.autenticacionDTO.PeticionLoginDTO;
+import com.gestorrh.api.dto.autenticacion.RespuestaLoginDTO;
+import com.gestorrh.api.dto.autenticacion.PeticionLoginDTO;
 import com.gestorrh.api.entity.Empleado;
 import com.gestorrh.api.entity.Empresa;
 import com.gestorrh.api.repository.EmpleadoRepository;

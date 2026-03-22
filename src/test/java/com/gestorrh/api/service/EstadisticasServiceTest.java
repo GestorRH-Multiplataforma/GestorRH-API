@@ -1,6 +1,6 @@
 package com.gestorrh.api.service;
 
-import com.gestorrh.api.dto.estadisticasDTO.DatoGraficoDTO;
+import com.gestorrh.api.dto.estadisticas.DatoGraficoDTO;
 import com.gestorrh.api.entity.Empresa;
 import com.gestorrh.api.repository.*;
 import org.junit.jupiter.api.AfterEach;
