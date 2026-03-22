@@ -2,6 +2,7 @@ package com.gestorrh.api.exception;
 
 import com.gestorrh.api.dto.RespuestaErrorDTO;
 import jakarta.servlet.http.HttpServletRequest;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.FieldError;
@@ -17,6 +18,7 @@ import java.util.stream.Collectors;
  * Gestor global de excepciones para interceptar errores y devolver un JSON limpio.
  */
 @RestControllerAdvice
+@Slf4j
 public class GestorExcepciones {
 
     /**
@@ -29,6 +31,8 @@ public class GestorExcepciones {
                 .stream()
                 .map(FieldError::getDefaultMessage)
                 .collect(Collectors.toList());
+
+        log.error("Error de VALIDACIÓN en la ruta [{}]: {}", request.getRequestURI(), errores);
 
         RespuestaErrorDTO errorResponse = RespuestaErrorDTO.builder()
                 .timestamp(LocalDateTime.now())
@@ -47,6 +51,8 @@ public class GestorExcepciones {
      */
     @ExceptionHandler(RuntimeException.class)
     public ResponseEntity<RespuestaErrorDTO> manejarExcepcionesDeNegocio(RuntimeException ex, HttpServletRequest request) {
+
+        log.warn("Violación de regla de NEGOCIO en la ruta [{}]: {}", request.getRequestURI(), ex.getMessage());
 
         RespuestaErrorDTO errorResponse = RespuestaErrorDTO.builder()
                 .timestamp(LocalDateTime.now())

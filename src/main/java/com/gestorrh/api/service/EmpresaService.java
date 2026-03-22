@@ -4,6 +4,7 @@ import com.gestorrh.api.dto.empresaDTO.*;
 import com.gestorrh.api.entity.Empresa;
 import com.gestorrh.api.repository.EmpresaRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -15,6 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
  */
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class EmpresaService {
 
     private final EmpresaRepository empresaRepository;
@@ -23,6 +25,7 @@ public class EmpresaService {
     @Transactional
     public RespuestaEmpresaDTO registrarEmpresa(PeticionRegistroEmpresaDTO peticion) {
         if (empresaRepository.findByEmail(peticion.getEmail()).isPresent()) {
+            log.warn("Intento de registro fallido: El email '{}' ya está registrado por otra empresa.", peticion.getEmail());
             throw new RuntimeException("Ya existe una empresa registrada con este correo.");
         }
 
@@ -35,6 +38,9 @@ public class EmpresaService {
                 .build();
 
         nuevaEmpresa = empresaRepository.save(nuevaEmpresa);
+
+        log.info("NUEVA EMPRESA REGISTRADA: {} (Email: {})", nuevaEmpresa.getNombre(), nuevaEmpresa.getEmail());
+
         return mapearARespuesta(nuevaEmpresa);
     }
 
@@ -57,6 +63,9 @@ public class EmpresaService {
         empresa.setRadioValidez(peticion.getRadioValidez());
 
         empresa = empresaRepository.save(empresa);
+
+        log.info("La empresa '{}' ha ACTUALIZADO su perfil y/o configuración de geovallado.", empresa.getEmail());
+
         return mapearARespuesta(empresa);
     }
 
@@ -65,17 +74,21 @@ public class EmpresaService {
         Empresa empresa = obtenerEmpresaAutenticada();
 
         if (!codificadorPassword.matches(peticion.getPasswordActual(), empresa.getPassword())) {
+            log.warn("Cambio de contraseña DENEGADO para la empresa '{}': La contraseña actual no coincide.", empresa.getEmail());
             throw new RuntimeException("La contraseña actual no es correcta. Operación denegada.");
         }
 
         empresa.setPassword(codificadorPassword.encode(peticion.getNuevaPassword()));
         empresaRepository.save(empresa);
+
+        log.info("La empresa '{}' ha cambiado su contraseña con éxito.", empresa.getEmail());
     }
 
     @Transactional
     public void eliminarMiEmpresa() {
         Empresa empresa = obtenerEmpresaAutenticada();
         empresaRepository.delete(empresa);
+        log.warn("ATENCIÓN: La empresa '{}' ha ELIMINADO su cuenta y todos sus datos asociados.", empresa.getEmail());
     }
 
     // MÉTODOS PRIVADOS

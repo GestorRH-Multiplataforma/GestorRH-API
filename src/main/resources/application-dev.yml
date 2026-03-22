@@ -10,3 +10,14 @@ spring:
     properties:
       hibernate:
         format_sql: true
+
+logging:
+  file:
+    name: logs/gestorrh-dev.log
+  logback:
+    rollingpolicy:
+      max-file-size: 10MB
+      max-history: 30
+  level:
+    root: WARN
+    com.gestorrh.api: INFO

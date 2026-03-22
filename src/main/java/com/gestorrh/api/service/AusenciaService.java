@@ -10,6 +10,7 @@ import com.gestorrh.api.repository.AusenciaRepository;
 import com.gestorrh.api.repository.EmpleadoRepository;
 import com.gestorrh.api.repository.EmpresaRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -23,6 +24,7 @@ import java.util.stream.Collectors;
  */
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class AusenciaService {
 
     private final AusenciaRepository ausenciaRepository;
@@ -55,6 +57,10 @@ public class AusenciaService {
                 .build();
 
         nuevaAusencia = ausenciaRepository.save(nuevaAusencia);
+
+        log.info("NUEVA AUSENCIA: El empleado '{}' ha solicitado una ausencia de tipo [{}] del {} al {}.",
+                empleadoLogueado.getEmail(), peticion.getTipo(), peticion.getFechaInicio(), peticion.getFechaFin());
+
         return mapearARespuesta(nuevaAusencia);
     }
 
@@ -78,6 +84,7 @@ public class AusenciaService {
         Ausencia ausencia = obtenerAusenciaPropia(idAusencia, empleadoLogueado);
 
         if (ausencia.getEstado() != EstadoAusencia.SOLICITADA) {
+            log.warn("Operación DENEGADA: El empleado '{}' intentó modificar la ausencia ID {} que ya no está en estado SOLICITADA.", empleadoLogueado.getEmail(), idAusencia);
             throw new RuntimeException("Solo puedes modificar una ausencia que esté en estado SOLICITADA.");
         }
 
@@ -98,6 +105,9 @@ public class AusenciaService {
         ausencia.setFechaFin(peticion.getFechaFin());
 
         ausencia = ausenciaRepository.save(ausencia);
+
+        log.info("AUSENCIA MODIFICADA: El empleado '{}' ha actualizado su solicitud de ausencia ID {}.", empleadoLogueado.getEmail(), idAusencia);
+
         return mapearARespuesta(ausencia);
     }
 
@@ -107,6 +117,7 @@ public class AusenciaService {
         Ausencia ausencia = obtenerAusenciaPropia(idAusencia, empleadoLogueado);
 
         if (ausencia.getEstado() != EstadoAusencia.SOLICITADA) {
+            log.warn("Operación DENEGADA: El empleado '{}' intentó cancelar la ausencia ID {} que ya no está en estado SOLICITADA.", empleadoLogueado.getEmail(), idAusencia);
             throw new RuntimeException("Solo puedes cancelar una ausencia que esté en estado SOLICITADA.");
         }
 
@@ -115,6 +126,7 @@ public class AusenciaService {
         }
 
         ausenciaRepository.delete(ausencia);
+        log.info("AUSENCIA CANCELADA: El empleado '{}' ha eliminado su solicitud de ausencia ID {}.", empleadoLogueado.getEmail(), idAusencia);
     }
 
     // MÉTODOS DE LA EMPRESA Y SUPERVISORES
@@ -165,6 +177,7 @@ public class AusenciaService {
 
         if (peticion.getEstado() == EstadoAusencia.RECHAZADA &&
                 (peticion.getObservacionesRevision() == null || peticion.getObservacionesRevision().trim().isEmpty())) {
+            log.warn("Revisión DENEGADA: El usuario '{}' intentó rechazar la ausencia ID {} sin justificar los motivos.", emailAuth, idAusencia);
             throw new RuntimeException("Debes proporcionar observaciones si rechazas la ausencia.");
         }
 
@@ -180,10 +193,16 @@ public class AusenciaService {
             );
             if (!turnosSolapados.isEmpty()) {
                 asignacionRepository.deleteAll(turnosSolapados);
+                log.info("SISTEMA: Eliminados {} turnos planificados para el empleado ID {} debido a la aprobación de la ausencia ID {}.",
+                        turnosSolapados.size(), ausencia.getEmpleado().getIdEmpleado(), idAusencia);
             }
         }
 
         ausencia = ausenciaRepository.save(ausencia);
+
+        log.info("REVISIÓN DE AUSENCIA: La ausencia ID {} ha sido marcada como {} por el usuario '{}'.",
+                idAusencia, peticion.getEstado(), emailAuth);
+
         return mapearARespuesta(ausencia);
     }
 
@@ -215,6 +234,7 @@ public class AusenciaService {
         if (esEmpresa) {
             Empresa empresa = empresaRepository.findByEmail(emailAuth).orElseThrow();
             if (!empleadoDestino.getEmpresa().getIdEmpresa().equals(empresa.getIdEmpresa())) {
+                log.warn("VIOLACIÓN DE SEGURIDAD: La empresa '{}' intentó revisar una ausencia del empleado ID {}, que pertenece a otra empresa.", emailAuth, empleadoDestino.getIdEmpleado());
                 throw new RuntimeException("El empleado no pertenece a tu empresa.");
             }
         } else {
@@ -223,9 +243,11 @@ public class AusenciaService {
                 throw new RuntimeException("El empleado no pertenece a tu empresa.");
             }
             if (!supervisor.getDepartamento().equalsIgnoreCase(empleadoDestino.getDepartamento())) {
+                log.warn("VIOLACIÓN DE SEGURIDAD: El supervisor '{}' intentó revisar una ausencia de un empleado fuera de su departamento ({}).", emailAuth, empleadoDestino.getDepartamento());
                 throw new RuntimeException("Solo puedes revisar ausencias de tu departamento.");
             }
             if (supervisor.getIdEmpleado().equals(empleadoDestino.getIdEmpleado())) {
+                log.warn("DENEGADO: El supervisor '{}' intentó auto-aprobarse una ausencia.", emailAuth);
                 throw new RuntimeException("No puedes aprobar o rechazar tus propias ausencias. Debe hacerlo la Empresa.");
             }
         }

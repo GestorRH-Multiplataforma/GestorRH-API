@@ -11,3 +11,7 @@ target/
 
 # Variables de entorno locales
 .env
+
+# Logs de la aplicacion (P0-32)
+logs/
+*.log
