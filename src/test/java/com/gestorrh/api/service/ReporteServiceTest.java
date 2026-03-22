@@ -1,6 +1,6 @@
 package com.gestorrh.api.service;
 
-import com.gestorrh.api.dto.reporteDTO.ReporteDetalleDTO;
+import com.gestorrh.api.dto.reporte.ReporteDetalleDTO;
 import com.gestorrh.api.entity.AsignacionTurno;
 import com.gestorrh.api.entity.Empleado;
 import com.gestorrh.api.entity.Empresa;
@@ -20,7 +20,6 @@ import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.List;
 import java.util.Optional;

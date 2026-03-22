@@ -1,8 +1,8 @@
 package com.gestorrh.api.controller;
 
-import com.gestorrh.api.dto.fichajeDTO.PeticionFichajeEntradaDTO;
-import com.gestorrh.api.dto.fichajeDTO.PeticionFichajeSalidaDTO;
-import com.gestorrh.api.dto.fichajeDTO.RespuestaFichajeDTO;
+import com.gestorrh.api.dto.fichaje.PeticionFichajeEntradaDTO;
+import com.gestorrh.api.dto.fichaje.PeticionFichajeSalidaDTO;
+import com.gestorrh.api.dto.fichaje.RespuestaFichajeDTO;
 import com.gestorrh.api.service.FichajeService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -60,7 +60,7 @@ public class FichajeController {
     @PreAuthorize("hasAnyRole('EMPRESA', 'SUPERVISOR')")
     public ResponseEntity<RespuestaFichajeDTO> modificarFichajeManual(
             @PathVariable Long idFichaje,
-            @Valid @RequestBody com.gestorrh.api.dto.fichajeDTO.PeticionModificacionFichajeDTO peticion) {
+            @Valid @RequestBody com.gestorrh.api.dto.fichaje.PeticionModificacionFichajeDTO peticion) {
 
         RespuestaFichajeDTO respuesta = fichajeService.modificarFichajeManual(idFichaje, peticion);
         return ResponseEntity.ok(respuesta);

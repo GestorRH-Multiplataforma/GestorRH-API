@@ -1,9 +1,9 @@
 package com.gestorrh.api.service;
 
-import com.gestorrh.api.dto.empleadoDTO.PeticionActualizarEmpleadoDTO;
-import com.gestorrh.api.dto.empleadoDTO.PeticionCrearEmpleadoDTO;
-import com.gestorrh.api.dto.empleadoDTO.RespuestaCrearEmpleadoDTO;
-import com.gestorrh.api.dto.empleadoDTO.RespuestaEmpleadoDTO;
+import com.gestorrh.api.dto.empleado.PeticionActualizarEmpleadoDTO;
+import com.gestorrh.api.dto.empleado.PeticionCrearEmpleadoDTO;
+import com.gestorrh.api.dto.empleado.RespuestaCrearEmpleadoDTO;
+import com.gestorrh.api.dto.empleado.RespuestaEmpleadoDTO;
 import com.gestorrh.api.entity.Empleado;
 import com.gestorrh.api.entity.Empresa;
 import com.gestorrh.api.entity.enums.RolEmpleado;

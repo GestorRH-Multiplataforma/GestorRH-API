@@ -1,7 +1,7 @@
 package com.gestorrh.api.controller;
 
-import com.gestorrh.api.dto.turnoDTO.PeticionTurnoDTO;
-import com.gestorrh.api.dto.turnoDTO.RespuestaTurnoDTO;
+import com.gestorrh.api.dto.turno.PeticionTurnoDTO;
+import com.gestorrh.api.dto.turno.RespuestaTurnoDTO;
 import com.gestorrh.api.service.TurnoService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;

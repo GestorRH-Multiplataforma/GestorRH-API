@@ -1,6 +1,6 @@
 package com.gestorrh.api.controller;
 
-import com.gestorrh.api.dto.empleadoDTO.*;
+import com.gestorrh.api.dto.empleado.*;
 import com.gestorrh.api.entity.enums.RolEmpleado;
 import com.gestorrh.api.service.EmpleadoService;
 import jakarta.validation.Valid;

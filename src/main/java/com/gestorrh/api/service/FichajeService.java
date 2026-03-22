@@ -1,9 +1,9 @@
 package com.gestorrh.api.service;
 
-import com.gestorrh.api.dto.fichajeDTO.PeticionFichajeEntradaDTO;
-import com.gestorrh.api.dto.fichajeDTO.PeticionFichajeSalidaDTO;
-import com.gestorrh.api.dto.fichajeDTO.PeticionModificacionFichajeDTO;
-import com.gestorrh.api.dto.fichajeDTO.RespuestaFichajeDTO;
+import com.gestorrh.api.dto.fichaje.PeticionFichajeEntradaDTO;
+import com.gestorrh.api.dto.fichaje.PeticionFichajeSalidaDTO;
+import com.gestorrh.api.dto.fichaje.PeticionModificacionFichajeDTO;
+import com.gestorrh.api.dto.fichaje.RespuestaFichajeDTO;
 import com.gestorrh.api.entity.AsignacionTurno;
 import com.gestorrh.api.entity.Empleado;
 import com.gestorrh.api.entity.Empresa;

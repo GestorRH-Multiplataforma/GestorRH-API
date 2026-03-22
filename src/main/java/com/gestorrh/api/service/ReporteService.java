@@ -1,7 +1,7 @@
 package com.gestorrh.api.service;
 
-import com.gestorrh.api.dto.reporteDTO.ReporteDetalleDTO;
-import com.gestorrh.api.dto.reporteDTO.ReporteResumenDTO;
+import com.gestorrh.api.dto.reporte.ReporteDetalleDTO;
+import com.gestorrh.api.dto.reporte.ReporteResumenDTO;
 import com.gestorrh.api.entity.Empleado;
 import com.gestorrh.api.entity.Empresa;
 import com.gestorrh.api.entity.Fichaje;

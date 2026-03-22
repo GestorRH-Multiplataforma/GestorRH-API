@@ -1,6 +1,6 @@
 package com.gestorrh.api.service;
 
-import com.gestorrh.api.dto.empresaDTO.*;
+import com.gestorrh.api.dto.empresa.*;
 import com.gestorrh.api.entity.Empresa;
 import com.gestorrh.api.repository.EmpresaRepository;
 import lombok.RequiredArgsConstructor;

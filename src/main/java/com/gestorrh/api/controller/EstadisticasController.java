@@ -1,6 +1,6 @@
 package com.gestorrh.api.controller;
 
-import com.gestorrh.api.dto.estadisticasDTO.DatoGraficoDTO;
+import com.gestorrh.api.dto.estadisticas.DatoGraficoDTO;
 import com.gestorrh.api.service.EstadisticasService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
