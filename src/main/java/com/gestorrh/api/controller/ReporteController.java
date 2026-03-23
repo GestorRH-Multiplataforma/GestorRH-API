@@ -7,6 +7,8 @@ import com.gestorrh.api.repository.EmpleadoRepository;
 import com.gestorrh.api.repository.EmpresaRepository;
 import com.gestorrh.api.service.ReportePdfService;
 import com.gestorrh.api.service.ReporteService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpHeaders;
@@ -24,12 +26,18 @@ import java.util.List;
 
 /**
  * Controlador REST dedicado a la generación y descarga de reportes de asistencia y fichajes.
+ * <p>
  * Proporciona endpoints para obtener datos detallados o resumidos, tanto en formato JSON
  * como en documentos PDF descargables, facilitando la auditoría y el control de horas trabajadas.
+ * </p>
  */
 @RestController
 @RequestMapping("/api/reportes")
 @RequiredArgsConstructor
+@Tag(
+        name = "9. Reportes",
+        description = "Generación de informes de horas trabajadas y fichajes. Formatos disponibles: JSON (para tablas Web) y PDF descargables."
+)
 public class ReporteController {
 
     private final ReporteService reporteService;
@@ -39,10 +47,13 @@ public class ReporteController {
 
     /**
      * Obtiene el historial pormenorizado de fichajes y cálculos de horas realizados en un rango de fechas.
+     * <p>
      * Este endpoint es idóneo para ser utilizado como fuente de datos en informes detallados,
      * permitiendo filtrar opcionalmente por un empleado específico.
-     *
+     * </p>
+     * <p>
      * URL de acceso: {@code GET http://localhost:8080/api/reportes/detalle?fechaInicio=2026-03-01&fechaFin=2026-03-31}
+     * </p>
      *
      * @param fechaInicio Fecha inicial del periodo a consultar (formato ISO: YYYY-MM-DD).
      * @param fechaFin Fecha final del periodo a consultar (formato ISO: YYYY-MM-DD).
@@ -51,6 +62,11 @@ public class ReporteController {
      */
     @GetMapping("/detalle")
     @PreAuthorize("hasAnyRole('EMPRESA', 'SUPERVISOR', 'EMPLEADO')")
+    @Operation(
+            summary = "Obtener reporte detallado (JSON)",
+            description = "Requiere Token de EMPRESA, SUPERVISOR o EMPLEADO. Devuelve el desglose diario de fichajes. " +
+                    "Los empleados solo ven sus datos; Empresa/Supervisor pueden filtrar usando el parámetro opcional 'idEmpleado'."
+    )
     public ResponseEntity<List<ReporteDetalleDTO>> generarReporteDetallado(
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaInicio,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaFin,
@@ -62,10 +78,13 @@ public class ReporteController {
 
     /**
      * Obtiene un resumen consolidado de las horas totales y extras trabajadas por los empleados en un periodo.
+     * <p>
      * Los datos se agrupan por empleado, siendo ideal para visualizaciones en cuadros de mando
      * y revisiones ejecutivas de productividad.
-     *
+     * </p>
+     * <p>
      * URL de acceso: {@code GET http://localhost:8080/api/reportes/resumen?fechaInicio=2026-03-01&fechaFin=2026-03-31}
+     * </p>
      *
      * @param fechaInicio Fecha inicial del periodo a resumir (formato ISO: YYYY-MM-DD).
      * @param fechaFin Fecha final del periodo a resumir (formato ISO: YYYY-MM-DD).
@@ -74,6 +93,12 @@ public class ReporteController {
      */
     @GetMapping("/resumen")
     @PreAuthorize("hasAnyRole('EMPRESA', 'SUPERVISOR', 'EMPLEADO')")
+    @Operation(
+            summary = "Obtener reporte resumido (JSON)",
+            description = "Requiere Token de EMPRESA, SUPERVISOR o EMPLEADO. Devuelve el total consolidado de horas " +
+                    "trabajadas y extras en el periodo. Los empleados solo ven sus datos; Empresa/Supervisor pueden filtrar " +
+                    "usando el parámetro opcional 'idEmpleado'."
+    )
     public ResponseEntity<List<ReporteResumenDTO>> generarReporteResumen(
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaInicio,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaFin,
@@ -85,9 +110,12 @@ public class ReporteController {
 
     /**
      * Genera y permite la descarga de un documento PDF con el reporte detallado de fichajes.
+     * <p>
      * El documento incluye el nombre de la empresa autenticada y el rango de fechas seleccionado.
-     *
+     * </p>
+     * <p>
      * URL de acceso: {@code GET http://localhost:8080/api/reportes/detalle/pdf?fechaInicio=2026-03-01&fechaFin=2026-03-31}
+     * </p>
      *
      * @param fechaInicio Fecha de inicio del reporte.
      * @param fechaFin Fecha de fin del reporte.
@@ -96,6 +124,11 @@ public class ReporteController {
      */
     @GetMapping("/detalle/pdf")
     @PreAuthorize("hasAnyRole('EMPRESA', 'SUPERVISOR', 'EMPLEADO')")
+    @Operation(
+            summary = "Descargar reporte detallado (PDF)",
+            description = "Requiere Token de EMPRESA, SUPERVISOR o EMPLEADO. Genera y descarga un documento PDF oficial " +
+                    "con el desglose diario de fichajes."
+    )
     public ResponseEntity<byte[]> descargarPdfDetalle(
             @RequestParam("fechaInicio") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaInicio,
             @RequestParam("fechaFin") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaFin,
@@ -118,9 +151,12 @@ public class ReporteController {
 
     /**
      * Genera y permite la descarga de un documento PDF con el resumen de horas por empleado.
+     * <p>
      * Facilita una visión rápida y profesional de la distribución de horas en un intervalo temporal.
-     *
+     * </p>
+     * <p>
      * URL de acceso: {@code GET http://localhost:8080/api/reportes/resumen/pdf?fechaInicio=2026-03-01&fechaFin=2026-03-31}
+     * </p>
      *
      * @param fechaInicio Fecha de inicio del resumen.
      * @param fechaFin Fecha de fin del resumen.
@@ -129,6 +165,11 @@ public class ReporteController {
      */
     @GetMapping("/resumen/pdf")
     @PreAuthorize("hasAnyRole('EMPRESA', 'SUPERVISOR', 'EMPLEADO')")
+    @Operation(
+            summary = "Descargar reporte resumido (PDF)",
+            description = "Requiere Token de EMPRESA, SUPERVISOR o EMPLEADO. Genera y descarga un documento PDF oficial " +
+                    "con el total consolidado de horas por empleado."
+    )
     public ResponseEntity<byte[]> descargarPdfResumen(
             @RequestParam("fechaInicio") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaInicio,
             @RequestParam("fechaFin") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaFin,
@@ -152,8 +193,10 @@ public class ReporteController {
 
     /**
      * Obtiene el nombre de la empresa asociada al usuario que ha realizado la petición.
+     * <p>
      * Determina si el usuario es una Empresa o un Empleado y recupera el nombre correspondiente
      * desde el repositorio adecuado.
+     * </p>
      *
      * @return El nombre de la empresa como cadena de texto.
      */
