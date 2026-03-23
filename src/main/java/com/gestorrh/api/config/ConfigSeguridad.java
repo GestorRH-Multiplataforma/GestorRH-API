@@ -49,11 +49,13 @@ public class ConfigSeguridad {
      * Configura la cadena de filtros de seguridad (Security Filter Chain).
      * <p>
      * Define las siguientes reglas:
-     * 1. Deshabilitar CSRF al ser una API stateless.
-     * 2. Política de creación de sesiones STATELESS (sin sesión en servidor).
-     * 3. Permisos de acceso: rutas públicas para autenticación, registro y errores, el resto requiere autenticación.
-     * 4. Añadir el filtro {@link FiltroJwt} antes del filtro estándar de autenticación de Spring.
      * </p>
+     * <ol>
+     *   <li>Deshabilitar CSRF al ser una API stateless.</li>
+     *   <li>Política de creación de sesiones STATELESS (sin sesión en servidor).</li>
+     *   <li>Permisos de acceso: rutas públicas para autenticación, registro y errores, el resto requiere autenticación.</li>
+     *   <li>Añadir el filtro {@link FiltroJwt} antes del filtro estándar de autenticación de Spring.</li>
+     * </ol>
      *
      * @param http El objeto {@link HttpSecurity} para configurar la seguridad web.
      * @return La cadena de filtros configurada.
@@ -66,6 +68,7 @@ public class ConfigSeguridad {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/auth/**", "/error", "/api/empresas/registro").permitAll()
+                        .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(filtroJwt, UsernamePasswordAuthenticationFilter.class);

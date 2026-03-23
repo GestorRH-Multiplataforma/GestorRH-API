@@ -21,3 +21,9 @@ jwt:
   secret: 404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970
   # Tiempo de expiración del token
   expiration: 86400000
+
+# CONFIGURACIÓN DE SWAGGER / OPENAPI
+springdoc:
+  swagger-ui:
+    tags-sorter: alpha
+    operations-sorter: method
