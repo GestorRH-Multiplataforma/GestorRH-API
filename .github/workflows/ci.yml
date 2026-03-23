@@ -49,6 +49,8 @@ jobs:
           cp target/swagger/openapi.json docs_site/swagger/
 
           sed -i 's|https://petstore.swagger.io/v2/swagger.json|./openapi.json|g' docs_site/swagger/swagger-initializer.js
+          
+          sed -i 's|layout: "StandaloneLayout"|layout: "StandaloneLayout", tagsSorter: "alpha", operationsSorter: "method"|g' docs_site/swagger/swagger-initializer.js
 
           echo '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Documentación GestorRH</title><style>body{font-family:sans-serif;text-align:center;margin-top:100px;background-color:#f4f4f9;}a{text-decoration:none;color:white;background:#4CAF50;padding:15px 25px;border-radius:5px;font-size:18px;margin:15px;display:inline-block;box-shadow: 0 4px 6px rgba(0,0,0,0.1);transition: background 0.3s;}a:hover{background:#45a049;}a.java{background:#e76f00;}a.java:hover{background:#c45e00;}</style></head><body><h1>GestorRH API - Portal de Documentación</h1><p>Selecciona la documentación técnica que deseas consultar:</p><br><a href="swagger/index.html">API REST (Swagger UI)</a><a href="javadoc/index.html" class="java">Código Java (Javadoc)</a></body></html>' > docs_site/index.html
 
