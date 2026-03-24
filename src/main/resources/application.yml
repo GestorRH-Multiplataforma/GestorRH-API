@@ -3,6 +3,15 @@ spring:
     name: GestorRH-API
   profiles:
     active: dev
+
+  # LOGS
+  security:
+    user:
+      name: usuario_ignorado
+      password: sin_uso
+  jpa:
+    open-in-view: false
+
   # CONFIGURACIÓN DE SUBIDA DE ARCHIVOS
   servlet:
     multipart:
@@ -19,7 +28,6 @@ file:
 # CONFIGURACIÓN DE SEGURIDAD (JWT). Si se lleva a produccion hay que quitar esta clave de aqui
 jwt:
   secret: 404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970
-  # Tiempo de expiración del token
   expiration: 86400000
 
 # CONFIGURACIÓN DE SWAGGER / OPENAPI
