@@ -26,13 +26,9 @@ jobs:
           SPRING_PROFILES_ACTIVE: test
         run: mvn clean test
 
-      - name: Generar Documentación Javadoc
+      - name: Generar Documentación (Javadoc y Swagger)
         if: github.ref == 'refs/heads/main'
-        run: mvn javadoc:javadoc
-
-      - name: Generar OpenAPI JSON (Swagger)
-        if: github.ref == 'refs/heads/main'
-        run: mvn verify -Pswagger-docs -DskipTests
+        run: mvn verify javadoc:javadoc -Papi-docs -DskipTests
 
       - name: Construir Portal de Documentación (Javadoc + Swagger UI)
         if: github.ref == 'refs/heads/main'

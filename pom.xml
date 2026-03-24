@@ -149,20 +149,11 @@
 					<argLine>-XX:+EnableDynamicAgentLoading</argLine>
 				</configuration>
 			</plugin>
-			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-javadoc-plugin</artifactId>
-				<version>3.6.3</version>
-				<configuration>
-					<failOnError>false</failOnError>
-					<show>private</show>
-				</configuration>
-			</plugin>
 		</plugins>
 	</build>
 	<profiles>
 		<profile>
-			<id>swagger-docs</id>
+			<id>api-docs</id>
 			<build>
 				<plugins>
 					<plugin>
@@ -184,6 +175,7 @@
 							</execution>
 						</executions>
 					</plugin>
+
 					<plugin>
 						<groupId>org.springdoc</groupId>
 						<artifactId>springdoc-openapi-maven-plugin</artifactId>
@@ -199,6 +191,45 @@
 							<apiDocsUrl>http://localhost:8080/v3/api-docs</apiDocsUrl>
 							<outputFileName>openapi.json</outputFileName>
 							<outputDir>${project.build.directory}/swagger</outputDir>
+						</configuration>
+					</plugin>
+
+					<plugin>
+						<groupId>org.apache.maven.plugins</groupId>
+						<artifactId>maven-javadoc-plugin</artifactId>
+						<version>3.6.3</version>
+						<configuration>
+							<failOnError>false</failOnError>
+							<show>private</show>
+							<windowtitle>Documentación Técnica - GestorRH</windowtitle>
+							<doctitle>Documentación Interna: GestorRH (Código Java)</doctitle>
+							<overview>${basedir}/src/main/javadoc/overview.html</overview>
+							<groups>
+								<group>
+									<title>1. Controladores</title>
+									<packages>com.gestorrh.api.controller*</packages>
+								</group>
+								<group>
+									<title>2. DTOs</title>
+									<packages>com.gestorrh.api.dto*</packages>
+								</group>
+								<group>
+									<title>3. Servicios</title>
+									<packages>com.gestorrh.api.service*</packages>
+								</group>
+								<group>
+									<title>4. Base de Datos</title>
+									<packages>com.gestorrh.api.entity*:com.gestorrh.api.repository*</packages>
+								</group>
+								<group>
+									<title>5. Seguridad y Errores</title>
+									<packages>com.gestorrh.api.security*:com.gestorrh.api.exception*</packages>
+								</group>
+								<group>
+									<title>6. Configuración</title>
+									<packages>com.gestorrh.api.config*</packages>
+								</group>
+							</groups>
 						</configuration>
 					</plugin>
 				</plugins>
