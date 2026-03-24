@@ -20,4 +20,6 @@ logging:
       max-history: 30
   level:
     root: WARN
-    com.gestorrh.api: INFO
+    com.gestorrh.api.controller: INFO
+    com.gestorrh.api.service: INFO
+    com.gestorrh.api.exception: INFO

@@ -41,7 +41,3 @@ Una vez que el contenedor de la base de datos esté corriendo, puedes compilar y
 mvn spring-boot:run
 ```
 La API estará disponible en la ruta base: `http://localhost:8080/api`
-
-### 3. Probar la API (Swagger)
-Una vez arrancada la aplicación, puedes ver todos los endpoints, sus parámetros y hacer pruebas reales desde el navegador accediendo a la interfaz de Swagger (OpenAPI):
-**[http://localhost:8080/swagger-ui/index.html](http://localhost:8080/swagger-ui/index.html)**
