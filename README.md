@@ -41,3 +41,35 @@ Una vez que el contenedor de la base de datos esté corriendo, puedes compilar y
 mvn spring-boot:run
 ```
 La API estará disponible en la ruta base: `http://localhost:8080/api`
+
+---
+
+## Versionado
+
+Este proyecto utiliza **Git tags anotados** para marcar hitos funcionales y versiones relevantes de la API REST.
+
+La estrategia de versionado sigue **Semantic Versioning** (`MAJOR.MINOR.PATCH`):
+
+- **MAJOR**: cambios incompatibles con clientes existentes.
+- **MINOR**: nuevas funcionalidades compatibles.
+- **PATCH**: correcciones compatibles sin ruptura del contrato de la API.
+
+### Hitos publicados
+
+- **`v0.1.0`** → primera versión funcional del backend.  
+  Incluye autenticación, autorización, gestión básica de empleados y una primera base de calidad.
+
+- **`v0.8.0`** → backlog funcional principal completado.  
+  Se consideran implementadas las funcionalidades principales de negocio de la API: seguridad, empresa, empleados, turnos, asignaciones, ausencias y fichajes.
+
+### Próximos hitos previstos
+
+- **`v0.9.0`** → versión casi lista.  
+  Incluirá la documentación y estabilización técnica previas a la primera release estable.
+
+- **`v1.0.0`** → primera versión estable.  
+  Será la versión de referencia para integración con clientes y futuros despliegues, una vez completada la refactorización importante y la preparación de despliegue.
+
+### Criterio de uso
+
+Para integración con clientes y despliegue, la referencia será siempre la **última versión estable aprobada**, no necesariamente el último commit de la rama `main`.
