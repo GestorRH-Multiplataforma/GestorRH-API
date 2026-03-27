@@ -13,6 +13,7 @@ import com.gestorrh.api.service.FileStorageService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -106,7 +107,10 @@ public class AusenciaController {
     @Operation(
             summary = "Solicitar nueva ausencia (con archivo opcional)",
             description = "Requiere Token de EMPLEADO (o SUPERVISOR). Permite enviar los datos de la ausencia (JSON) " +
-                    "junto con un archivo PDF/Imagen opcional como justificante."
+                    "junto con un archivo PDF/Imagen opcional como justificante.",
+            responses = {
+                    @ApiResponse(responseCode = "201", description = "Solicitud de ausencia creada con éxito")
+            }
     )
     @ApiErroresEscritura
     public ResponseEntity<RespuestaAusenciaDTO> crearAusencia(
@@ -193,7 +197,10 @@ public class AusenciaController {
     @Operation(
             summary = "Cancelar mi solicitud de ausencia",
             description = "Requiere Token de EMPLEADO (o SUPERVISOR). Elimina una solicitud propia siempre que aún no " +
-                    "haya sido procesada (siga PENDIENTE)."
+                    "haya sido procesada (siga PENDIENTE).",
+            responses = {
+                    @ApiResponse(responseCode = "204", description = "Solicitud de ausencia eliminada con éxito")
+            }
     )
     @ApiErroresAccion
     public ResponseEntity<Void> eliminarMiAusencia(@PathVariable("id") Long id) {

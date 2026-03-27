@@ -7,6 +7,7 @@ import com.gestorrh.api.dto.turno.PeticionTurnoDTO;
 import com.gestorrh.api.dto.turno.RespuestaTurnoDTO;
 import com.gestorrh.api.service.TurnoService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -52,7 +53,10 @@ public class TurnoController {
     @PreAuthorize("hasRole('EMPRESA')")
     @Operation(
             summary = "Crear un nuevo turno",
-            description = "Requiere Token de EMPRESA. Añade un nuevo tipo de turno (plantilla con hora de inicio y fin) al catálogo de la empresa."
+            description = "Requiere Token de EMPRESA. Añade un nuevo tipo de turno (plantilla con hora de inicio y fin) al catálogo de la empresa.",
+            responses = {
+                    @ApiResponse(responseCode = "201", description = "Turno creado con éxito")
+            }
     )
     @ApiErroresEscritura
     public ResponseEntity<RespuestaTurnoDTO> crearTurno(@Valid @RequestBody PeticionTurnoDTO peticion) {
@@ -126,7 +130,10 @@ public class TurnoController {
     @PreAuthorize("hasRole('EMPRESA')")
     @Operation(
             summary = "Eliminar un turno",
-            description = "Requiere Token de EMPRESA. Borra físicamente un turno del catálogo de la empresa. Acción irreversible."
+            description = "Requiere Token de EMPRESA. Borra físicamente un turno del catálogo de la empresa. Acción irreversible.",
+            responses = {
+                    @ApiResponse(responseCode = "204", description = "Turno eliminado con éxito")
+            }
     )
     @ApiErroresAccion
     public ResponseEntity<Void> eliminarTurno(@PathVariable("id") Long id) {

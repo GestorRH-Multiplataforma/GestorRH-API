@@ -7,6 +7,7 @@ import com.gestorrh.api.dto.empleado.*;
 import com.gestorrh.api.entity.enums.RolEmpleado;
 import com.gestorrh.api.service.EmpleadoService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -56,7 +57,10 @@ public class EmpleadoController {
     @PreAuthorize("hasRole('EMPRESA')")
     @Operation(
             summary = "Dar de alta un empleado",
-            description = "Requiere Token de EMPRESA. Crea un nuevo empleado y el sistema le genera una contraseña automáticamente."
+            description = "Requiere Token de EMPRESA. Crea un nuevo empleado y el sistema le genera una contraseña automáticamente.",
+            responses = {
+                    @ApiResponse(responseCode = "201", description = "Empleado creado con éxito")
+            }
     )
     @ApiErroresEscritura
     public ResponseEntity<RespuestaCrearEmpleadoDTO> crearEmpleado(
@@ -136,7 +140,10 @@ public class EmpleadoController {
     @PreAuthorize("hasRole('EMPRESA')")
     @Operation(
             summary = "Tramitar baja de empleado",
-            description = "Requiere Token de EMPRESA. Establece la fecha de baja de un empleado, revocando su acceso al sistema a partir de ese día."
+            description = "Requiere Token de EMPRESA. Establece la fecha de baja de un empleado, revocando su acceso al sistema a partir de ese día.",
+            responses = {
+                    @ApiResponse(responseCode = "201", description = "Empleado dado de baja con éxito")
+            }
     )
     @ApiErroresAccion
     public ResponseEntity<Void> darDeBaja(
@@ -166,7 +173,10 @@ public class EmpleadoController {
     @PreAuthorize("hasRole('EMPRESA')")
     @Operation(
             summary = "Readmitir empleado dado de baja",
-            description = "Requiere Token de EMPRESA. Reinstaura a un empleado previamente dado de baja y le genera una nueva contraseña de acceso."
+            description = "Requiere Token de EMPRESA. Reinstaura a un empleado previamente dado de baja y le genera una nueva contraseña de acceso.",
+            responses = {
+                    @ApiResponse(responseCode = "201", description = "Empleado readmitido con éxito")
+            }
     )
     @ApiErroresAccion
     public ResponseEntity<RespuestaCrearEmpleadoDTO> readmitirEmpleado(@PathVariable("id") Long id) {
@@ -216,7 +226,10 @@ public class EmpleadoController {
     @PreAuthorize("hasRole('EMPLEADO')")
     @Operation(
             summary = "Cambiar mi contraseña (Empleado)",
-            description = "Requiere Token de EMPLEADO o SUPERVISOR. Permite al empleado autenticado cambiar su contraseña de acceso personal."
+            description = "Requiere Token de EMPLEADO o SUPERVISOR. Permite al empleado autenticado cambiar su contraseña de acceso personal.",
+            responses = {
+                    @ApiResponse(responseCode = "204", description = "Contraseña cambiada con éxito")
+            }
     )
     @ApiErroresEscritura
     public ResponseEntity<Void> cambiarMiContrasena(
