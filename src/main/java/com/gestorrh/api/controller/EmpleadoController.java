@@ -1,5 +1,8 @@
 package com.gestorrh.api.controller;
 
+import com.gestorrh.api.annotation.ApiErroresAccion;
+import com.gestorrh.api.annotation.ApiErroresEscritura;
+import com.gestorrh.api.annotation.ApiErroresLectura;
 import com.gestorrh.api.dto.empleado.*;
 import com.gestorrh.api.entity.enums.RolEmpleado;
 import com.gestorrh.api.service.EmpleadoService;
@@ -55,6 +58,7 @@ public class EmpleadoController {
             summary = "Dar de alta un empleado",
             description = "Requiere Token de EMPRESA. Crea un nuevo empleado y el sistema le genera una contraseña automáticamente."
     )
+    @ApiErroresEscritura
     public ResponseEntity<RespuestaCrearEmpleadoDTO> crearEmpleado(
             @Valid @RequestBody PeticionCrearEmpleadoDTO peticion) {
 
@@ -80,6 +84,7 @@ public class EmpleadoController {
             summary = "Listar todos los empleados",
             description = "Requiere Token de EMPRESA. Obtiene el catálogo completo de empleados pertenecientes a la empresa autenticada."
     )
+    @ApiErroresLectura
     public ResponseEntity<List<RespuestaEmpleadoDTO>> listarEmpleados() {
 
         List<RespuestaEmpleadoDTO> lista = empleadoService.obtenerEmpleadosDeEmpresa();
@@ -105,6 +110,7 @@ public class EmpleadoController {
             summary = "Actualizar datos de un empleado",
             description = "Requiere Token de EMPRESA. Modifica la información personal y contractual de un empleado específico."
     )
+    @ApiErroresAccion
     public ResponseEntity<RespuestaEmpleadoDTO> actualizarEmpleado(
             @PathVariable("id") Long id,
             @Valid @RequestBody PeticionActualizarEmpleadoDTO peticion) {
@@ -132,6 +138,7 @@ public class EmpleadoController {
             summary = "Tramitar baja de empleado",
             description = "Requiere Token de EMPRESA. Establece la fecha de baja de un empleado, revocando su acceso al sistema a partir de ese día."
     )
+    @ApiErroresAccion
     public ResponseEntity<Void> darDeBaja(
             @PathVariable Long id,
             @RequestBody @Valid PeticionBajaEmpleadoDTO peticion) {
@@ -161,6 +168,7 @@ public class EmpleadoController {
             summary = "Readmitir empleado dado de baja",
             description = "Requiere Token de EMPRESA. Reinstaura a un empleado previamente dado de baja y le genera una nueva contraseña de acceso."
     )
+    @ApiErroresAccion
     public ResponseEntity<RespuestaCrearEmpleadoDTO> readmitirEmpleado(@PathVariable("id") Long id) {
 
         RespuestaCrearEmpleadoDTO respuesta = empleadoService.readmitirEmpleado(id);
@@ -185,6 +193,7 @@ public class EmpleadoController {
             summary = "Obtener mi perfil (Empleado)",
             description = "Requiere Token de EMPLEADO o SUPERVISOR. Devuelve la información personal y contractual del empleado autenticado."
     )
+    @ApiErroresLectura
     public ResponseEntity<RespuestaEmpleadoDTO> obtenerMiPerfil() {
 
         RespuestaEmpleadoDTO miPerfil = empleadoService.obtenerMiPerfil();
@@ -209,6 +218,7 @@ public class EmpleadoController {
             summary = "Cambiar mi contraseña (Empleado)",
             description = "Requiere Token de EMPLEADO o SUPERVISOR. Permite al empleado autenticado cambiar su contraseña de acceso personal."
     )
+    @ApiErroresEscritura
     public ResponseEntity<Void> cambiarMiContrasena(
             @Valid @RequestBody PeticionCambiarPasswordDTO peticion) {
 
@@ -234,6 +244,7 @@ public class EmpleadoController {
             summary = "Listar roles disponibles",
             description = "Requiere Token de EMPRESA o SUPERVISOR. Sirve como diccionario para rellenar desplegables en el Frontend."
     )
+    @ApiErroresLectura
     public ResponseEntity<List<RolEmpleado>> obtenerRoles() {
         return ResponseEntity.ok(Arrays.asList(RolEmpleado.values()));
     }

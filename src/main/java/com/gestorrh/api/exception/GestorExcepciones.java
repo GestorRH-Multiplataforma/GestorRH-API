@@ -41,22 +41,6 @@ public class GestorExcepciones {
      * @param request La solicitud HTTP en la que se produjo el error, para extraer la URI.
      * @return Una respuesta estructurada con los detalles de los campos que fallaron la validación.
      */
-    @ApiResponse(responseCode = "400", description = "Error de validación en los datos enviados",
-            content = @Content(mediaType = "application/json",
-                    schema = @Schema(implementation = RespuestaErrorDTO.class),
-                    examples = @ExampleObject(value = """
-                            {
-                              "timestamp": "2024-03-24T10:30:00.000",
-                              "status": 400,
-                              "errorCode": "VALIDATION_ERROR",
-                              "message": "Error en la validación de los datos enviados",
-                              "path": "/api/ejemplo",
-                              "details": [
-                                "El email no tiene un formato válido",
-                                "La contraseña es obligatoria"
-                              ]
-                            }
-                            """)))
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<RespuestaErrorDTO> manejarValidaciones(MethodArgumentNotValidException ex, HttpServletRequest request) {
 
@@ -90,21 +74,6 @@ public class GestorExcepciones {
      * @param request La solicitud HTTP donde ocurrió la incidencia.
      * @return Una respuesta de error estandarizada con el mensaje de la excepción.
      */
-    @ApiResponse(responseCode = "400", description = "Violación de regla de negocio (Ej. Datos duplicados, acciones no permitidas)",
-            content = @Content(mediaType = "application/json",
-                    schema = @Schema(implementation = RespuestaErrorDTO.class),
-                    examples = @ExampleObject(value = """
-                            {
-                              "timestamp": "2024-03-24T11:15:00.000",
-                              "status": 400,
-                              "errorCode": "BUSINESS_RULE_VIOLATION",
-                              "message": "El empleado ya tiene un turno asignado para esta fecha",
-                              "path": "/api/ejemplo",
-                              "details": [
-                                "Revisa las reglas de negocio o los parámetros enviados"
-                              ]
-                            }
-                            """)))
     @ExceptionHandler(RuntimeException.class)
     public ResponseEntity<RespuestaErrorDTO> manejarExcepcionesDeNegocio(RuntimeException ex, HttpServletRequest request) {
 
@@ -134,21 +103,6 @@ public class GestorExcepciones {
      * @param request La solicitud HTTP donde se produjo el fallo crítico.
      * @return Una respuesta de error genérica con código 500 y recomendaciones de contacto con soporte.
      */
-    @ApiResponse(responseCode = "500", description = "Error interno del servidor",
-            content = @Content(mediaType = "application/json",
-                    schema = @Schema(implementation = RespuestaErrorDTO.class),
-                    examples = @ExampleObject(value = """
-                            {
-                              "timestamp": "2024-03-24T12:00:00.000",
-                              "status": 500,
-                              "errorCode": "INTERNAL_SERVER_ERROR",
-                              "message": "Ha ocurrido un error inesperado en el servidor",
-                              "path": "/api/ejemplo",
-                              "details": [
-                                "Por favor, contacte con el soporte técnico"
-                              ]
-                            }
-                            """)))
     @ExceptionHandler(Exception.class)
     public ResponseEntity<RespuestaErrorDTO> manejarExcepcionesGlobales(Exception ex, HttpServletRequest request) {
 
@@ -178,21 +132,6 @@ public class GestorExcepciones {
      * @param request La solicitud HTTP donde se intentó acceder al recurso inexistente.
      * @return Una respuesta estructurada indicando que el recurso no está disponible.
      */
-    @ApiResponse(responseCode = "404", description = "Recurso no encontrado",
-            content = @Content(mediaType = "application/json",
-                    schema = @Schema(implementation = RespuestaErrorDTO.class),
-                    examples = @ExampleObject(value = """
-                            {
-                              "timestamp": "2024-03-24T12:30:00.000",
-                              "status": 404,
-                              "errorCode": "NOT_FOUND",
-                              "message": "El recurso solicitado no ha sido encontrado en el sistema",
-                              "path": "/api/ejemplo/99",
-                              "details": [
-                                "Verifique que el identificador o los parámetros de búsqueda sean correctos"
-                              ]
-                            }
-                            """)))
     @ExceptionHandler(jakarta.persistence.EntityNotFoundException.class)
     public ResponseEntity<RespuestaErrorDTO> manejarRecursoNoEncontrado(jakarta.persistence.EntityNotFoundException ex, HttpServletRequest request) {
 

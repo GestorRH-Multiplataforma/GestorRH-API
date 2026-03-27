@@ -1,5 +1,8 @@
 package com.gestorrh.api.controller;
 
+import com.gestorrh.api.annotation.ApiErroresAccion;
+import com.gestorrh.api.annotation.ApiErroresEscritura;
+import com.gestorrh.api.annotation.ApiErroresLectura;
 import com.gestorrh.api.dto.fichaje.PeticionFichajeEntradaDTO;
 import com.gestorrh.api.dto.fichaje.PeticionFichajeSalidaDTO;
 import com.gestorrh.api.dto.fichaje.RespuestaFichajeDTO;
@@ -53,6 +56,7 @@ public class FichajeController {
             summary = "Fichar entrada",
             description = "Requiere Token de EMPLEADO o SUPERVISOR. Registra el inicio de la jornada laboral del usuario autenticado."
     )
+    @ApiErroresEscritura
     public ResponseEntity<RespuestaFichajeDTO> ficharEntrada(@Valid @RequestBody PeticionFichajeEntradaDTO peticion) {
         RespuestaFichajeDTO respuesta = fichajeService.ficharEntrada(peticion);
         return ResponseEntity.status(HttpStatus.CREATED).body(respuesta);
@@ -76,6 +80,7 @@ public class FichajeController {
             summary = "Fichar salida",
             description = "Requiere Token de EMPLEADO o SUPERVISOR. Cierra el fichaje abierto del usuario autenticado y calcula el tiempo trabajado."
     )
+    @ApiErroresAccion
     public ResponseEntity<RespuestaFichajeDTO> ficharSalida(@Valid @RequestBody PeticionFichajeSalidaDTO peticion) {
         RespuestaFichajeDTO respuesta = fichajeService.ficharSalida(peticion);
         return ResponseEntity.ok(respuesta);
@@ -103,6 +108,7 @@ public class FichajeController {
                     "Los EMPLEADOS solo ven los suyos; SUPERVISOR/EMPRESA pueden usar el parámetro opcional 'empleadoId' " +
                     "para ver el historial de un trabajador específico."
     )
+    @ApiErroresLectura
     public ResponseEntity<List<RespuestaFichajeDTO>> consultarFichajes(
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaInicio,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaFin,
@@ -132,6 +138,7 @@ public class FichajeController {
             description = "Requiere Token de EMPRESA o SUPERVISOR. Permite corregir horas de entrada/salida de un fichaje existente. " +
                     "Quedará registrado el motivo de la modificación por motivos legales y de auditoría."
     )
+    @ApiErroresAccion
     public ResponseEntity<RespuestaFichajeDTO> modificarFichajeManual(
             @PathVariable Long idFichaje,
             @Valid @RequestBody com.gestorrh.api.dto.fichaje.PeticionModificacionFichajeDTO peticion) {

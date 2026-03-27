@@ -9,6 +9,7 @@ import com.gestorrh.api.repository.AsignacionTurnoRepository;
 import com.gestorrh.api.repository.AusenciaRepository;
 import com.gestorrh.api.repository.EmpleadoRepository;
 import com.gestorrh.api.repository.EmpresaRepository;
+import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.Authentication;
@@ -182,14 +183,16 @@ public class AusenciaService {
         List<Ausencia> ausencias;
 
         if (esEmpresa) {
-            Empresa empresa = empresaRepository.findByEmail(emailAuth).orElseThrow();
+            Empresa empresa = empresaRepository.findByEmail(emailAuth)
+                    .orElseThrow(() -> new EntityNotFoundException("Empresa no encontrada"));
             if (estadoFiltro != null) {
                 ausencias = ausenciaRepository.findByEmpleadoEmpresaIdEmpresaAndEstado(empresa.getIdEmpresa(), estadoFiltro);
             } else {
                 ausencias = ausenciaRepository.findByEmpleadoEmpresaIdEmpresa(empresa.getIdEmpresa());
             }
         } else {
-            Empleado supervisor = empleadoRepository.findByEmail(emailAuth).orElseThrow();
+            Empleado supervisor = empleadoRepository.findByEmail(emailAuth)
+                    .orElseThrow(() -> new EntityNotFoundException("Supervisor no encontrado"));
             if (estadoFiltro != null) {
                 ausencias = ausenciaRepository.findByEmpleadoEmpresaIdEmpresaAndEmpleadoDepartamentoIgnoreCaseAndEstado(
                         supervisor.getEmpresa().getIdEmpresa(), supervisor.getDepartamento(), estadoFiltro);
@@ -224,6 +227,7 @@ public class AusenciaService {
      * @param peticion Objeto {@link PeticionRevisionAusenciaDTO} con el nuevo estado y comentarios.
      * @return {@link RespuestaAusenciaDTO} con el resultado final de la revisión persistido.
      * @throws RuntimeException Si falta justificación en un rechazo o si el revisor no tiene autoridad suficiente.
+     * @throws EntityNotFoundException Si la ausencia especificada no existe en la base de datos.
      */
     @Transactional
     public RespuestaAusenciaDTO revisarAusencia(Long idAusencia, PeticionRevisionAusenciaDTO peticion) {
@@ -232,7 +236,7 @@ public class AusenciaService {
         boolean esEmpresa = auth.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_EMPRESA"));
 
         Ausencia ausencia = ausenciaRepository.findById(idAusencia)
-                .orElseThrow(() -> new RuntimeException("Ausencia no encontrada"));
+                .orElseThrow(() -> new EntityNotFoundException("Ausencia no encontrada"));
 
         validarPrivilegiosRevision(emailAuth, esEmpresa, ausencia.getEmpleado());
 
@@ -270,12 +274,13 @@ public class AusenciaService {
     /**
      * Obtiene el empleado autenticado a partir del contexto de seguridad.
      *
+     * @throws EntityNotFoundException Si el empleado especificado no existe en la base de datos.
      * @return Empleado que realiza la acción.
      */
     private Empleado obtenerEmpleadoAutenticado() {
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
         return empleadoRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("Empleado no encontrado"));
+                .orElseThrow(() -> new EntityNotFoundException("Empleado no encontrado"));
     }
 
     /**
@@ -283,11 +288,12 @@ public class AusenciaService {
      *
      * @param idAusencia Identificador de la ausencia.
      * @param empleadoLogueado Empleado que realiza la consulta.
+     * @throws EntityNotFoundException Si la ausencia especificada no existe en la base de datos.
      * @return {@link Ausencia} Entidad recuperada.
      */
     private Ausencia obtenerAusenciaPropia(Long idAusencia, Empleado empleadoLogueado) {
         Ausencia ausencia = ausenciaRepository.findById(idAusencia)
-                .orElseThrow(() -> new RuntimeException("Ausencia no encontrada"));
+                .orElseThrow(() -> new EntityNotFoundException("Ausencia no encontrada"));
 
         if (!ausencia.getEmpleado().getIdEmpleado().equals(empleadoLogueado.getIdEmpleado())) {
             throw new RuntimeException("Acceso denegado: Esta ausencia no te pertenece.");
@@ -317,13 +323,15 @@ public class AusenciaService {
      */
     private void validarPrivilegiosRevision(String emailAuth, boolean esEmpresa, Empleado empleadoDestino) {
         if (esEmpresa) {
-            Empresa empresa = empresaRepository.findByEmail(emailAuth).orElseThrow();
+            Empresa empresa = empresaRepository.findByEmail(emailAuth)
+                    .orElseThrow(() -> new EntityNotFoundException("Empresa no encontrada"));
             if (!empleadoDestino.getEmpresa().getIdEmpresa().equals(empresa.getIdEmpresa())) {
                 log.warn("VIOLACIÓN DE SEGURIDAD: La empresa '{}' intentó revisar una ausencia del empleado ID {}, que pertenece a otra empresa.", emailAuth, empleadoDestino.getIdEmpleado());
                 throw new RuntimeException("El empleado no pertenece a tu empresa.");
             }
         } else {
-            Empleado supervisor = empleadoRepository.findByEmail(emailAuth).orElseThrow();
+            Empleado supervisor = empleadoRepository.findByEmail(emailAuth)
+                    .orElseThrow(() -> new EntityNotFoundException("Supervisor no encontrado"));
             if (!supervisor.getEmpresa().getIdEmpresa().equals(empleadoDestino.getEmpresa().getIdEmpresa())) {
                 throw new RuntimeException("El empleado no pertenece a tu empresa.");
             }

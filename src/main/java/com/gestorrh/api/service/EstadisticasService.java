@@ -2,6 +2,7 @@ package com.gestorrh.api.service;
 
 import com.gestorrh.api.dto.estadisticas.DatoGraficoDTO;
 import com.gestorrh.api.repository.*;
+import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -125,6 +126,7 @@ public class EstadisticasService {
      * Si el usuario es un empleado o supervisor, se obtiene el ID de la empresa a la que pertenece.
      *
      * @return Long El identificador único de la empresa asociada al contexto de seguridad.
+     * @throws EntityNotFoundException Si la empresa o el empleado no existen en el sistema.
      */
     private Long obtenerIdEmpresaAutenticada() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
@@ -132,9 +134,11 @@ public class EstadisticasService {
         boolean esEmpresa = auth.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_EMPRESA"));
 
         if (esEmpresa) {
-            return empresaRepository.findByEmail(email).orElseThrow().getIdEmpresa();
+            return empresaRepository.findByEmail(email)
+                    .orElseThrow(() -> new EntityNotFoundException("Error crítico: Empresa no encontrada en el sistema")).getIdEmpresa();
         } else {
-            return empleadoRepository.findByEmail(email).orElseThrow().getEmpresa().getIdEmpresa();
+            return empleadoRepository.findByEmail(email)
+                    .orElseThrow(() -> new EntityNotFoundException("Error crítico: Empleado no encontrado en el sistema")).getEmpresa().getIdEmpresa();
         }
     }
 }

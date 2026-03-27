@@ -1,5 +1,8 @@
 package com.gestorrh.api.controller;
 
+import com.gestorrh.api.annotation.ApiErroresAccion;
+import com.gestorrh.api.annotation.ApiErroresEscritura;
+import com.gestorrh.api.annotation.ApiErroresLectura;
 import com.gestorrh.api.dto.turno.PeticionTurnoDTO;
 import com.gestorrh.api.dto.turno.RespuestaTurnoDTO;
 import com.gestorrh.api.service.TurnoService;
@@ -51,6 +54,7 @@ public class TurnoController {
             summary = "Crear un nuevo turno",
             description = "Requiere Token de EMPRESA. Añade un nuevo tipo de turno (plantilla con hora de inicio y fin) al catálogo de la empresa."
     )
+    @ApiErroresEscritura
     public ResponseEntity<RespuestaTurnoDTO> crearTurno(@Valid @RequestBody PeticionTurnoDTO peticion) {
         RespuestaTurnoDTO respuesta = turnoService.crearTurno(peticion);
         return ResponseEntity.status(HttpStatus.CREATED).body(respuesta);
@@ -73,6 +77,7 @@ public class TurnoController {
             summary = "Listar turnos de la empresa",
             description = "Requiere Token de EMPRESA o SUPERVISOR. Obtiene el catálogo completo de todos los turnos configurados por la empresa."
     )
+    @ApiErroresLectura
     public ResponseEntity<List<RespuestaTurnoDTO>> listarTurnos() {
         List<RespuestaTurnoDTO> lista = turnoService.obtenerTurnosDeEmpresa();
         return ResponseEntity.ok(lista);
@@ -97,6 +102,7 @@ public class TurnoController {
             summary = "Actualizar un turno",
             description = "Requiere Token de EMPRESA. Modifica la información (descripción, hora inicio/fin) de un turno existente en el catálogo."
     )
+    @ApiErroresAccion
     public ResponseEntity<RespuestaTurnoDTO> actualizarTurno(
             @PathVariable("id") Long id,
             @Valid @RequestBody PeticionTurnoDTO peticion) {
@@ -122,6 +128,7 @@ public class TurnoController {
             summary = "Eliminar un turno",
             description = "Requiere Token de EMPRESA. Borra físicamente un turno del catálogo de la empresa. Acción irreversible."
     )
+    @ApiErroresAccion
     public ResponseEntity<Void> eliminarTurno(@PathVariable("id") Long id) {
         turnoService.eliminarTurno(id);
         return ResponseEntity.noContent().build();

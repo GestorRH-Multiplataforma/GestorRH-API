@@ -1,5 +1,8 @@
 package com.gestorrh.api.controller;
 
+import com.gestorrh.api.annotation.ApiErroresAccion;
+import com.gestorrh.api.annotation.ApiErroresEscritura;
+import com.gestorrh.api.annotation.ApiErroresLectura;
 import com.gestorrh.api.dto.asignacion.PeticionAsignacionTurnoDTO;
 import com.gestorrh.api.dto.asignacion.RespuestaAsignacionTurnoDTO;
 import com.gestorrh.api.entity.enums.ModalidadTurno;
@@ -54,6 +57,7 @@ public class AsignacionTurnoController {
             summary = "Crear asignación de turno",
             description = "Requiere Token de EMPRESA o SUPERVISOR. Asigna un turno específico a un empleado en una fecha y modalidad determinada."
     )
+    @ApiErroresEscritura
     public ResponseEntity<RespuestaAsignacionTurnoDTO> crearAsignacion(@Valid @RequestBody PeticionAsignacionTurnoDTO peticion) {
         RespuestaAsignacionTurnoDTO respuesta = asignacionService.crearAsignacion(peticion);
         return ResponseEntity.status(HttpStatus.CREATED).body(respuesta);
@@ -78,6 +82,7 @@ public class AsignacionTurnoController {
             description = "Requiere Token de EMPRESA o SUPERVISOR. La EMPRESA visualiza toda la planificación; el SUPERVISOR " +
                     "solo accede a las asignaciones de su departamento."
     )
+    @ApiErroresLectura
     public ResponseEntity<List<RespuestaAsignacionTurnoDTO>> listarAsignaciones() {
         List<RespuestaAsignacionTurnoDTO> lista = asignacionService.obtenerAsignacionesPermitidas();
         return ResponseEntity.ok(lista);
@@ -101,6 +106,7 @@ public class AsignacionTurnoController {
             description = "Requiere Token de EMPLEADO (o SUPERVISOR). Recupera el listado exclusivo de la planificación " +
                     "horaria personal del usuario logueado."
     )
+    @ApiErroresLectura
     public ResponseEntity<List<RespuestaAsignacionTurnoDTO>> obtenerMisAsignaciones() {
         List<RespuestaAsignacionTurnoDTO> lista = asignacionService.obtenerMisAsignaciones();
         return ResponseEntity.ok(lista);
@@ -126,6 +132,7 @@ public class AsignacionTurnoController {
             description = "Requiere Token de EMPRESA o SUPERVISOR. Modifica una asignación existente. " +
                     "Es obligatorio especificar un motivo de cambio para la auditoría."
     )
+    @ApiErroresAccion
     public ResponseEntity<RespuestaAsignacionTurnoDTO> actualizarAsignacion(
             @PathVariable("id") Long id,
             @Valid @RequestBody PeticionAsignacionTurnoDTO peticion) {
@@ -152,6 +159,7 @@ public class AsignacionTurnoController {
             description = "Requiere Token de EMPRESA o SUPERVISOR. Borra de forma permanente una asignación de turno del " +
                     "sistema por correcciones de planificación."
     )
+    @ApiErroresAccion
     public ResponseEntity<Void> eliminarAsignacion(@PathVariable("id") Long id) {
         asignacionService.eliminarAsignacion(id);
         return ResponseEntity.noContent().build();
@@ -175,6 +183,7 @@ public class AsignacionTurnoController {
             description = "Requiere Token de EMPRESA o SUPERVISOR. Endpoint de diccionario que devuelve los " +
                     "valores posibles (ej: Presencial, Teletrabajo)."
     )
+    @ApiErroresLectura
     public ResponseEntity<List<ModalidadTurno>> obtenerModalidades() {
         return ResponseEntity.ok(Arrays.asList(ModalidadTurno.values()));
     }

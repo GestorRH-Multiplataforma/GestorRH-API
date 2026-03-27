@@ -5,6 +5,7 @@ import com.gestorrh.api.dto.asignacion.RespuestaAsignacionTurnoDTO;
 import com.gestorrh.api.entity.*;
 import com.gestorrh.api.entity.enums.EstadoAusencia;
 import com.gestorrh.api.repository.*;
+import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.Authentication;
@@ -57,7 +58,7 @@ public class AsignacionTurnoService {
      *
      * @param peticion Objeto {@link PeticionAsignacionTurnoDTO} con los detalles de la planificación propuesta.
      * @return {@link RespuestaAsignacionTurnoDTO} con los datos de la asignación confirmada satisfactoriamente.
-     * @throws RuntimeException Si se violan reglas de integridad, límites de jornada o permisos de seguridad.
+     * @throws EntityNotFoundException Si el empleado o el turno especificados no existen en la base de datos.
      */
     @Transactional
     public RespuestaAsignacionTurnoDTO crearAsignacion(PeticionAsignacionTurnoDTO peticion) {
@@ -66,12 +67,12 @@ public class AsignacionTurnoService {
         boolean esEmpresa = auth.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_EMPRESA"));
 
         Empleado empleadoDestino = empleadoRepository.findById(peticion.getIdEmpleado())
-                .orElseThrow(() -> new RuntimeException("Empleado no encontrado"));
+                .orElseThrow(() -> new EntityNotFoundException("Empleado no encontrado"));
 
         validarSedeConfigurada(empleadoDestino.getEmpresa());
 
         Turno turno = turnoRepository.findById(peticion.getIdTurno())
-                .orElseThrow(() -> new RuntimeException("Turno no encontrado"));
+                .orElseThrow(() -> new EntityNotFoundException("Turno no encontrado"));
 
         validarPrivilegiosAsignacion(emailAuth, esEmpresa, empleadoDestino, turno);
 
@@ -124,6 +125,7 @@ public class AsignacionTurnoService {
     /**
      * Obtiene el calendario de turnos personal del empleado autenticado.
      *
+     * @throws EntityNotFoundException Si el empleado o el turno especificados no existen en la base de datos.
      * @return List de {@link RespuestaAsignacionTurnoDTO} con las asignaciones propias.
      */
     @Transactional(readOnly = true)
@@ -131,7 +133,7 @@ public class AsignacionTurnoService {
         String emailAuth = SecurityContextHolder.getContext().getAuthentication().getName();
 
         Empleado empleado = empleadoRepository.findByEmail(emailAuth)
-                .orElseThrow(() -> new RuntimeException("Empleado no encontrado"));
+                .orElseThrow(() -> new EntityNotFoundException("Empleado no encontrado"));
 
         List<AsignacionTurno> misAsignaciones = asignacionRepository.findByEmpleadoIdEmpleado(empleado.getIdEmpleado());
 
@@ -146,7 +148,8 @@ public class AsignacionTurnoService {
      * @param idAsignacion Identificador único de la asignación a modificar.
      * @param peticion DTO con los nuevos parámetros del turno y el motivo del cambio.
      * @return {@link RespuestaAsignacionTurnoDTO} con los datos actualizados y metadatos de auditoría.
-     * @throws RuntimeException Si falta el motivo del cambio o se violan reglas de negocio.
+     * @throws EntityNotFoundException Si el empleado o el turno especificados no existen en la base de datos.
+     * @throws RuntimeException Si se violan los límites de jornada, hay solapamiento de vacaciones o faltan permisos de seguridad.
      */
     @Transactional
     public RespuestaAsignacionTurnoDTO actualizarAsignacion(Long idAsignacion, PeticionAsignacionTurnoDTO peticion) {
@@ -155,10 +158,10 @@ public class AsignacionTurnoService {
         boolean esEmpresa = auth.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_EMPRESA"));
 
         AsignacionTurno asignacionExistente = asignacionRepository.findById(idAsignacion)
-                .orElseThrow(() -> new RuntimeException("Asignación no encontrada"));
+                .orElseThrow(() -> new EntityNotFoundException("Asignación no encontrada"));
 
         Turno nuevoTurno = turnoRepository.findById(peticion.getIdTurno())
-                .orElseThrow(() -> new RuntimeException("Turno no encontrado"));
+                .orElseThrow(() -> new EntityNotFoundException("Turno no encontrado"));
 
         validarPrivilegiosAsignacion(emailAuth, esEmpresa, asignacionExistente.getEmpleado(), nuevoTurno);
 
@@ -194,6 +197,7 @@ public class AsignacionTurnoService {
     /**
      * Elimina permanentemente una asignación de turno del sistema.
      *
+     * @throws EntityNotFoundException Si la asignación especificada no existe en la base de datos.
      * @param idAsignacion Identificador de la asignación a borrar.
      */
     @Transactional
@@ -203,7 +207,7 @@ public class AsignacionTurnoService {
         boolean esEmpresa = auth.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_EMPRESA"));
 
         AsignacionTurno asignacion = asignacionRepository.findById(idAsignacion)
-                .orElseThrow(() -> new RuntimeException("Asignación no encontrada"));
+                .orElseThrow(() -> new EntityNotFoundException("Asignación no encontrada"));
 
         validarPrivilegiosAsignacion(emailAuth, esEmpresa, asignacion.getEmpleado(), asignacion.getTurno());
 

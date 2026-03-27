@@ -1,5 +1,6 @@
 package com.gestorrh.api.service;
 
+import jakarta.persistence.EntityNotFoundException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
@@ -107,10 +108,10 @@ public class FileStorageService {
             if (resource.exists()) {
                 return resource;
             } else {
-                throw new RuntimeException("Archivo no encontrado: " + fileName);
+                throw new EntityNotFoundException("Archivo no encontrado: " + fileName);
             }
         } catch (MalformedURLException ex) {
-            throw new RuntimeException("Archivo no encontrado: " + fileName, ex);
+            throw new EntityNotFoundException("Archivo no encontrado: " + fileName, ex);
         }
     }
 
