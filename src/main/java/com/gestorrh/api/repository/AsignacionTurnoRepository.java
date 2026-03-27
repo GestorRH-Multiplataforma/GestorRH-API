@@ -26,11 +26,22 @@ public interface AsignacionTurnoRepository extends JpaRepository<AsignacionTurno
 
     /**
      * Busca las asignaciones de turno para una empresa y departamento específicos.
+     * <p>
+     * Utiliza un doble JOIN FETCH para traer al empleado y su turno asignado
+     * en una sola consulta SQL, eliminando el problema N+1 múltiple.
+     * </p>
      * @param idEmpresa El ID de la empresa.
      * @param departamento El nombre del departamento (ignora mayúsculas/minúsculas).
      * @return Lista de asignaciones para ese departamento.
      */
-    List<AsignacionTurno> findByEmpleadoEmpresaIdEmpresaAndEmpleadoDepartamentoIgnoreCase(Long idEmpresa, String departamento);
+    @Query("SELECT a FROM AsignacionTurno a " +
+            "JOIN FETCH a.empleado e " +
+            "JOIN FETCH a.turno t " +
+            "WHERE e.empresa.idEmpresa = :idEmpresa " +
+            "AND LOWER(e.departamento) = LOWER(:departamento)")
+    List<AsignacionTurno> findByEmpleadoEmpresaIdEmpresaAndEmpleadoDepartamentoIgnoreCase(
+            @Param("idEmpresa") Long idEmpresa,
+            @Param("departamento") String departamento);
 
     /**
      * Recupera todas las asignaciones de turno de una empresa.
@@ -48,12 +59,24 @@ public interface AsignacionTurnoRepository extends JpaRepository<AsignacionTurno
 
     /**
      * Busca las asignaciones de turno de un empleado en un rango de fechas determinado.
+     * <p>
+     * Utiliza JOIN FETCH para cargar el turno y el empleado asociados,
+     * evitando latencia y consultas N+1 al renderizar el calendario mensual.
+     * </p>
      * @param idEmpleado El ID del empleado.
      * @param fechaInicio Fecha inicial del rango.
      * @param fechaFin Fecha final del rango.
      * @return Lista de asignaciones en el periodo indicado.
      */
-    List<AsignacionTurno> findByEmpleadoIdEmpleadoAndFechaBetween(Long idEmpleado, LocalDate fechaInicio, LocalDate fechaFin);
+    @Query("SELECT a FROM AsignacionTurno a " +
+            "JOIN FETCH a.turno t " +
+            "JOIN FETCH a.empleado e " +
+            "WHERE e.idEmpleado = :idEmpleado " +
+            "AND a.fecha BETWEEN :fechaInicio AND :fechaFin")
+    List<AsignacionTurno> findByEmpleadoIdEmpleadoAndFechaBetween(
+            @Param("idEmpleado") Long idEmpleado,
+            @Param("fechaInicio") LocalDate fechaInicio,
+            @Param("fechaFin") LocalDate fechaFin);
 
     /**
      * Cuenta el número de empleados distintos que tienen un turno planificado para el día de hoy.
