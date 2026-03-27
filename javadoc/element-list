@@ -1,4 +1,5 @@
 com.gestorrh.api
+com.gestorrh.api.annotation
 com.gestorrh.api.config
 com.gestorrh.api.controller
 com.gestorrh.api.dto.asignacion
