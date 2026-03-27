@@ -2,16 +2,36 @@ package com.gestorrh.api.config;
 
 import io.swagger.v3.oas.models.Components;
 import io.swagger.v3.oas.models.OpenAPI;
+import io.swagger.v3.oas.models.examples.Example;
 import io.swagger.v3.oas.models.info.Contact;
 import io.swagger.v3.oas.models.info.Info;
+import io.swagger.v3.oas.models.media.Content;
+import io.swagger.v3.oas.models.media.MediaType;
+import io.swagger.v3.oas.models.media.Schema;
+import io.swagger.v3.oas.models.responses.ApiResponse;
 import io.swagger.v3.oas.models.security.SecurityRequirement;
 import io.swagger.v3.oas.models.security.SecurityScheme;
+import org.springdoc.core.customizers.OpenApiCustomizer;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+/**
+ * Configuración de Swagger/OpenAPI para la documentación de la API.
+ * 
+ * <p>Esta clase define la información general de la API, el esquema de seguridad
+ * basado en JWT y personalizaciones globales para las respuestas de error.</p>
+ */
 @Configuration
 public class ConfigSwagger {
 
+    /**
+     * Define la configuración base de OpenAPI para el sistema GestorRH.
+     * 
+     * <p>Configura el título, versión, descripción detallada del flujo de uso
+     * y los requisitos de seguridad globales (Bearer Token).</p>
+     * 
+     * @return instancia de OpenAPI con la configuración del proyecto
+     */
     @Bean
     public OpenAPI gestorRhOpenAPI() {
         final String securitySchemeName = "bearerAuth";
@@ -49,5 +69,57 @@ public class ConfigSwagger {
                                 .scheme("bearer")
                                 .bearerFormat("JWT")
                                 .description("Pega aquí directamente tu token JWT (sin la palabra 'Bearer ').")));
+    }
+
+    /**
+     * Define un customizador global para inyectar automáticamente respuestas de seguridad.
+     * 
+     * <p>Este bean añade las respuestas HTTP 401 (Unauthorized) y 403 (Forbidden)
+     * a todos los endpoints de la API, detallando el esquema de error utilizado.</p>
+     * 
+     * @return customizador de OpenAPI para respuestas de seguridad globales
+     */
+    @Bean
+    public OpenApiCustomizer respuestasSeguridadGlobalesCustomizer() {
+        return openApi -> {
+            MediaType mediaType401 = new MediaType()
+                    .schema(new Schema<>().$ref("#/components/schemas/RespuestaErrorDTO"))
+                    .addExamples("401", new Example().value("""
+                            {
+                              "timestamp": "2024-03-24T10:00:00.000",
+                              "status": 401,
+                              "errorCode": "UNAUTHORIZED",
+                              "message": "No autorizado. Token JWT ausente, inválido o expirado.",
+                              "path": "/api/... (ruta solicitada)",
+                              "details": []
+                            }
+                            """));
+
+            ApiResponse response401 = new ApiResponse()
+                    .description("No autorizado - Falta token o es inválido")
+                    .content(new Content().addMediaType(org.springframework.http.MediaType.APPLICATION_JSON_VALUE, mediaType401));
+            
+            MediaType mediaType403 = new MediaType()
+                    .schema(new Schema<>().$ref("#/components/schemas/RespuestaErrorDTO"))
+                    .addExamples("403", new Example().value("""
+                            {
+                              "timestamp": "2024-03-24T10:05:00.000",
+                              "status": 403,
+                              "errorCode": "FORBIDDEN",
+                              "message": "Acceso denegado. No tienes el rol necesario para esta acción.",
+                              "path": "/api/... (ruta solicitada)",
+                              "details": []
+                            }
+                            """));
+
+            ApiResponse response403 = new ApiResponse()
+                    .description("Prohibido - No tienes permisos suficientes")
+                    .content(new Content().addMediaType(org.springframework.http.MediaType.APPLICATION_JSON_VALUE, mediaType403));
+            
+            openApi.getPaths().values().forEach(pathItem -> pathItem.readOperations().forEach(operation -> {
+                operation.getResponses().addApiResponse("401", response401);
+                operation.getResponses().addApiResponse("403", response403);
+            }));
+        };
     }
 }
