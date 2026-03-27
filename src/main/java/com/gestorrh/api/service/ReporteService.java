@@ -8,6 +8,7 @@ import com.gestorrh.api.entity.Fichaje;
 import com.gestorrh.api.repository.EmpleadoRepository;
 import com.gestorrh.api.repository.EmpresaRepository;
 import com.gestorrh.api.repository.FichajeRepository;
+import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -86,7 +87,8 @@ public class ReporteService {
         List<Fichaje> fichajes;
 
         if (esEmpresa) {
-            Empresa empresa = empresaRepository.findByEmail(emailAuth).orElseThrow();
+            Empresa empresa = empresaRepository.findByEmail(emailAuth)
+                    .orElseThrow(() -> new EntityNotFoundException("Empresa no encontrada"));
             fichajes = fichajeRepository.findByEmpleadoEmpresaIdEmpresaAndFechaBetween(empresa.getIdEmpresa(), fechaInicio, fechaFin);
 
             if (idEmpleadoFiltro != null) {
@@ -94,7 +96,8 @@ public class ReporteService {
                         .filter(f -> f.getEmpleado().getIdEmpleado().equals(idEmpleadoFiltro)).collect(Collectors.toList());
             }
         } else {
-            Empleado empleadoAuth = empleadoRepository.findByEmail(emailAuth).orElseThrow();
+            Empleado empleadoAuth = empleadoRepository.findByEmail(emailAuth)
+                    .orElseThrow(() -> new EntityNotFoundException("Empleado no encontrado"));
 
             if (esSupervisor) {
                 List<Fichaje> fichajesDepto = fichajeRepository.findByEmpleadoEmpresaIdEmpresaAndFechaBetween(empleadoAuth.getEmpresa().getIdEmpresa(), fechaInicio, fechaFin);

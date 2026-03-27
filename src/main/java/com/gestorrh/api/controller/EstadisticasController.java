@@ -1,5 +1,6 @@
 package com.gestorrh.api.controller;
 
+import com.gestorrh.api.annotation.ApiErroresLectura;
 import com.gestorrh.api.dto.estadisticas.DatoGraficoDTO;
 import com.gestorrh.api.service.EstadisticasService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -50,6 +51,7 @@ public class EstadisticasController {
             description = "Requiere Token de EMPRESA o SUPERVISOR. Devuelve los indicadores clave numéricos " +
                     "(total empleados, planificados de hoy, ausentes) para la cabecera del Dashboard."
     )
+    @ApiErroresLectura
     public ResponseEntity<Map<String, Long>> obtenerKpisDashboard() {
         return ResponseEntity.ok(estadisticasService.obtenerKpisDashboard());
     }
@@ -72,6 +74,7 @@ public class EstadisticasController {
             description = "Requiere Token de EMPRESA o SUPERVISOR. Devuelve la distribución de la plantilla estructurada " +
                     "para pintar gráficos de sectores o barras."
     )
+    @ApiErroresLectura
     public ResponseEntity<List<DatoGraficoDTO>> obtenerEmpleadosPorDepartamento() {
         return ResponseEntity.ok(estadisticasService.obtenerEmpleadosPorDepartamento());
     }
@@ -94,6 +97,7 @@ public class EstadisticasController {
             description = "Requiere Token de EMPRESA o SUPERVISOR. Agrupa las ausencias aprobadas según su tipología " +
                     "(ej: Vacaciones, Baja Médica) para su representación gráfica."
     )
+    @ApiErroresLectura
     public ResponseEntity<List<DatoGraficoDTO>> obtenerAusenciasAprobadasPorTipo() {
         return ResponseEntity.ok(estadisticasService.obtenerAusenciasAprobadasPorTipo());
     }
@@ -116,6 +120,7 @@ public class EstadisticasController {
             description = "Requiere Token de EMPRESA o SUPERVISOR. Muestra el volumen de solicitudes de ausencia pendientes frente " +
                     "a aprobadas/denegadas para medir la carga administrativa."
     )
+    @ApiErroresLectura
     public ResponseEntity<List<DatoGraficoDTO>> obtenerAusenciasPorEstado() {
         return ResponseEntity.ok(estadisticasService.obtenerAusenciasPorEstado());
     }
@@ -138,6 +143,7 @@ public class EstadisticasController {
             description = "Requiere Token de EMPRESA o SUPERVISOR. Identifica a los empleados con mayor número de " +
                     "impuntualidades acumuladas en sus fichajes."
     )
+    @ApiErroresLectura
     public ResponseEntity<List<DatoGraficoDTO>> obtenerTopRetrasos() {
         return ResponseEntity.ok(estadisticasService.obtenerTopRetrasos());
     }

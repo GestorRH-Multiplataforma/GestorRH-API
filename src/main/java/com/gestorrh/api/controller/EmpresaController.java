@@ -1,5 +1,8 @@
 package com.gestorrh.api.controller;
 
+import com.gestorrh.api.annotation.ApiErroresAccion;
+import com.gestorrh.api.annotation.ApiErroresLectura;
+import com.gestorrh.api.annotation.ApiErroresRegistro;
 import com.gestorrh.api.dto.empresa.*;
 import com.gestorrh.api.service.EmpresaService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -45,6 +48,7 @@ public class EmpresaController {
             description = "Endpoint público para dar de alta una nueva empresa en el sistema. No requiere autenticación."
     )
     @SecurityRequirements()
+    @ApiErroresRegistro
     public ResponseEntity<RespuestaEmpresaDTO> registrarEmpresa(@Valid @RequestBody PeticionRegistroEmpresaDTO peticion) {
         RespuestaEmpresaDTO respuesta = empresaService.registrarEmpresa(peticion);
         return ResponseEntity.status(HttpStatus.CREATED).body(respuesta);
@@ -63,6 +67,7 @@ public class EmpresaController {
     @GetMapping("/me")
     @PreAuthorize("hasRole('EMPRESA')")
     @Operation(summary = "Obtener mi perfil", description = "Requiere Token de EMPRESA. Devuelve los datos de la empresa autenticada.")
+    @ApiErroresLectura
     public ResponseEntity<RespuestaEmpresaDTO> obtenerMiPerfil() {
         return ResponseEntity.ok(empresaService.obtenerMiPerfil());
     }
@@ -81,6 +86,7 @@ public class EmpresaController {
     @PutMapping("/me")
     @PreAuthorize("hasRole('EMPRESA')")
     @Operation(summary = "Actualizar mi perfil", description = "Requiere Token de EMPRESA. Modifica los datos básicos de la empresa.")
+    @ApiErroresAccion
     public ResponseEntity<RespuestaEmpresaDTO> actualizarMiPerfil(@Valid @RequestBody PeticionActualizarEmpresaDTO peticion) {
         return ResponseEntity.ok(empresaService.actualizarMiPerfil(peticion));
     }
@@ -99,6 +105,7 @@ public class EmpresaController {
     @PutMapping("/me/contrasena")
     @PreAuthorize("hasRole('EMPRESA')")
     @Operation(summary = "Cambiar mi contraseña", description = "Requiere Token de EMPRESA. Cambia la contraseña de acceso actual.")
+    @ApiErroresAccion
     public ResponseEntity<Void> cambiarMiContrasena(@Valid @RequestBody PeticionCambiarPasswordEmpresaDTO peticion) {
         empresaService.cambiarMiContrasena(peticion);
         return ResponseEntity.noContent().build();
@@ -117,6 +124,7 @@ public class EmpresaController {
     @DeleteMapping("/me")
     @PreAuthorize("hasRole('EMPRESA')")
     @Operation(summary = "Eliminar mi empresa", description = "Requiere Token de EMPRESA. Borrado lógico/físico irreversible de la cuenta.")
+    @ApiErroresAccion
     public ResponseEntity<Void> eliminarMiEmpresa() {
         empresaService.eliminarMiEmpresa();
         return ResponseEntity.noContent().build();

@@ -5,6 +5,7 @@ import com.gestorrh.api.entity.Empleado;
 import com.gestorrh.api.entity.Empresa;
 import com.gestorrh.api.repository.EmpleadoRepository;
 import com.gestorrh.api.repository.EmpresaRepository;
+import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -55,7 +56,7 @@ public class EmpleadoService {
         String correoEmpresaAuth = SecurityContextHolder.getContext().getAuthentication().getName();
 
         Empresa empresa = empresaRepository.findByEmail(correoEmpresaAuth)
-                .orElseThrow(() -> new RuntimeException("Empresa no encontrada en el sistema"));
+                .orElseThrow(() -> new EntityNotFoundException("Empresa no encontrada en el sistema"));
 
         if (empleadoRepository.findByEmail(peticion.getEmail()).isPresent()) {
             log.warn("Empresa '{}' intentó crear empleado fallido: El correo '{}' ya existe.", correoEmpresaAuth, peticion.getEmail());
@@ -94,7 +95,9 @@ public class EmpleadoService {
 
     /**
      * Recupera la lista completa de empleados que pertenecen a la empresa autenticada.
+     * <p>
      * Calcula dinámicamente el estado de actividad basándose en la fecha de baja del contrato.
+     * </p>
      *
      * @return List de {@link RespuestaEmpleadoDTO} con el personal de la empresa.
      */
@@ -104,7 +107,7 @@ public class EmpleadoService {
         String correoEmpresaAuth = SecurityContextHolder.getContext().getAuthentication().getName();
 
         Empresa empresa = empresaRepository.findByEmail(correoEmpresaAuth)
-                .orElseThrow(() -> new RuntimeException("Empresa no encontrada"));
+                .orElseThrow(() -> new EntityNotFoundException("Empresa no encontrada"));
 
         List<Empleado> empleados = empleadoRepository.findByEmpresaIdEmpresa(empresa.getIdEmpresa());
 
@@ -129,7 +132,9 @@ public class EmpleadoService {
 
     /**
      * Actualiza la información profesional y de contacto de un empleado.
+     * <p>
      * Verifica estrictamente que el empleado pertenezca a la empresa que solicita la modificación.
+     * </p>
      *
      * @param idEmpleado Identificador único del empleado a modificar.
      * @param peticion DTO con los nuevos datos (nombre, apellidos, puesto, rol, etc.).
@@ -141,10 +146,10 @@ public class EmpleadoService {
 
         String correoEmpresaAuth = SecurityContextHolder.getContext().getAuthentication().getName();
         Empresa empresaLogueada = empresaRepository.findByEmail(correoEmpresaAuth)
-                .orElseThrow(() -> new RuntimeException("Empresa no encontrada"));
+                .orElseThrow(() -> new EntityNotFoundException("Empresa no encontrada"));
 
         Empleado empleado = empleadoRepository.findById(idEmpleado)
-                .orElseThrow(() -> new RuntimeException("Empleado no encontrado con ID: " + idEmpleado));
+                .orElseThrow(() -> new EntityNotFoundException("Empleado no encontrado con ID: " + idEmpleado));
 
         if (!empleado.getEmpresa().getIdEmpresa().equals(empresaLogueada.getIdEmpresa())) {
             log.warn("VIOLACIÓN DE SEGURIDAD: La empresa '{}' intentó modificar al empleado ID {}, que pertenece a otra empresa.", correoEmpresaAuth, idEmpleado);
@@ -181,8 +186,10 @@ public class EmpleadoService {
 
     /**
      * Tramita la baja laboral de un empleado en el sistema.
+     * <p>
      * Si la fecha de baja es igual o anterior a hoy, el empleado se marca como inactivo inmediatamente.
      * Si es posterior, la baja queda programada para su procesamiento automático futuro.
+     * </p>
      *
      * @param idEmpleado Identificador del empleado.
      * @param fechaBaja Fecha efectiva de la finalización del contrato.
@@ -191,10 +198,10 @@ public class EmpleadoService {
     public void darDeBajaEmpleado(Long idEmpleado, LocalDate fechaBaja) {
         String correoEmpresaAuth = SecurityContextHolder.getContext().getAuthentication().getName();
         Empresa empresaLogueada = empresaRepository.findByEmail(correoEmpresaAuth)
-                .orElseThrow(() -> new RuntimeException("Empresa no encontrada"));
+                .orElseThrow(() -> new EntityNotFoundException("Empresa no encontrada"));
 
         Empleado empleado = empleadoRepository.findById(idEmpleado)
-                .orElseThrow(() -> new RuntimeException("Empleado no encontrado"));
+                .orElseThrow(() -> new EntityNotFoundException("Empleado no encontrado"));
 
         if (!empleado.getEmpresa().getIdEmpresa().equals(empresaLogueada.getIdEmpresa())) {
             log.warn("VIOLACIÓN DE SEGURIDAD: La empresa '{}' intentó dar de baja al empleado ID {}, que pertenece a otra empresa.", correoEmpresaAuth, idEmpleado);
@@ -215,7 +222,9 @@ public class EmpleadoService {
 
     /**
      * Reincorpora a un empleado que previamente se encontraba en estado de baja.
+     * <p>
      * Limpia la fecha de fin de contrato, reactiva la cuenta y genera una nueva contraseña de acceso.
+     * </p>
      *
      * @param idEmpleado Identificador del empleado a readmitir.
      * @return {@link RespuestaCrearEmpleadoDTO} con la nueva contraseña de acceso para el empleado reincorporado.
@@ -225,10 +234,10 @@ public class EmpleadoService {
 
         String correoEmpresaAuth = SecurityContextHolder.getContext().getAuthentication().getName();
         Empresa empresaLogueada = empresaRepository.findByEmail(correoEmpresaAuth)
-                .orElseThrow(() -> new RuntimeException("Empresa no encontrada"));
+                .orElseThrow(() -> new EntityNotFoundException("Empresa no encontrada"));
 
         Empleado empleado = empleadoRepository.findById(idEmpleado)
-                .orElseThrow(() -> new RuntimeException("Empleado no encontrado con ID: " + idEmpleado));
+                .orElseThrow(() -> new EntityNotFoundException("Empleado no encontrado con ID: " + idEmpleado));
 
         if (!empleado.getEmpresa().getIdEmpresa().equals(empresaLogueada.getIdEmpresa())) {
             log.warn("VIOLACIÓN DE SEGURIDAD: La empresa '{}' intentó readmitir al empleado ID {}, que pertenece a otra empresa.", correoEmpresaAuth, idEmpleado);
@@ -272,7 +281,7 @@ public class EmpleadoService {
         String correoEmpleadoAuth = SecurityContextHolder.getContext().getAuthentication().getName();
 
         Empleado empleado = empleadoRepository.findByEmail(correoEmpleadoAuth)
-                .orElseThrow(() -> new RuntimeException("Error crítico: Empleado no encontrado en el sistema"));
+                .orElseThrow(() -> new EntityNotFoundException("Error crítico: Empleado no encontrado en el sistema"));
 
         boolean esRealmenteActivo = empleado.getActivo() &&
                 (empleado.getFechaBajaContrato() == null || empleado.getFechaBajaContrato().isAfter(LocalDate.now()));
@@ -293,7 +302,9 @@ public class EmpleadoService {
 
     /**
      * Permite al empleado autenticado actualizar su contraseña personal.
+     * <p>
      * Requiere la validación exitosa de su contraseña actual.
+     * </p>
      *
      * @param peticion DTO con la contraseña actual y la nueva contraseña deseada.
      */
@@ -302,7 +313,7 @@ public class EmpleadoService {
         String correoEmpleadoAuth = SecurityContextHolder.getContext().getAuthentication().getName();
 
         Empleado empleado = empleadoRepository.findByEmail(correoEmpleadoAuth)
-                .orElseThrow(() -> new RuntimeException("Error crítico: Empleado no encontrado en el sistema"));
+                .orElseThrow(() -> new EntityNotFoundException("Error crítico: Empleado no encontrado en el sistema"));
 
         if (!codificadorPassword.matches(peticion.getPasswordActual(), empleado.getPassword())) {
             log.warn("Cambio de contraseña DENEGADO para el empleado '{}': La contraseña actual no coincide.", correoEmpleadoAuth);

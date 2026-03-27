@@ -1,5 +1,6 @@
 package com.gestorrh.api.controller;
 
+import com.gestorrh.api.annotation.ApiErroresRegistro;
 import com.gestorrh.api.dto.autenticacion.PeticionLoginDTO;
 import com.gestorrh.api.dto.autenticacion.RespuestaLoginDTO;
 import com.gestorrh.api.service.AutenticacionService;
@@ -48,6 +49,7 @@ public class AutenticacionController {
             description = "Punto de entrada público. Introduce credenciales de empresa para obtener un Token con rol EMPRESA."
     )
     @SecurityRequirements()
+    @ApiErroresRegistro
     public ResponseEntity<RespuestaLoginDTO> loginEmpresa(@Valid @RequestBody PeticionLoginDTO peticion) {
 
         RespuestaLoginDTO respuesta = servicioAutenticacion.loginEmpresa(peticion);
@@ -72,6 +74,7 @@ public class AutenticacionController {
             description = "Punto de entrada público. Introduce credenciales de empleado para obtener un Token con rol EMPLEADO o SUPERVISOR."
     )
     @SecurityRequirements()
+    @ApiErroresRegistro
     public ResponseEntity<RespuestaLoginDTO> loginEmpleado(@Valid @RequestBody PeticionLoginDTO peticion) {
 
         RespuestaLoginDTO respuesta = servicioAutenticacion.loginEmpleado(peticion);

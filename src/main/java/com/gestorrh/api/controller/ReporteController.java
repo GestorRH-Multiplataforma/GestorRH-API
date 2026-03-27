@@ -1,5 +1,6 @@
 package com.gestorrh.api.controller;
 
+import com.gestorrh.api.annotation.ApiErroresLectura;
 import com.gestorrh.api.dto.reporte.ReporteDetalleDTO;
 import com.gestorrh.api.dto.reporte.ReporteResumenDTO;
 import com.gestorrh.api.entity.Empresa;
@@ -67,6 +68,7 @@ public class ReporteController {
             description = "Requiere Token de EMPRESA, SUPERVISOR o EMPLEADO. Devuelve el desglose diario de fichajes. " +
                     "Los empleados solo ven sus datos; Empresa/Supervisor pueden filtrar usando el parámetro opcional 'idEmpleado'."
     )
+    @ApiErroresLectura
     public ResponseEntity<List<ReporteDetalleDTO>> generarReporteDetallado(
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaInicio,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaFin,
@@ -99,6 +101,7 @@ public class ReporteController {
                     "trabajadas y extras en el periodo. Los empleados solo ven sus datos; Empresa/Supervisor pueden filtrar " +
                     "usando el parámetro opcional 'idEmpleado'."
     )
+    @ApiErroresLectura
     public ResponseEntity<List<ReporteResumenDTO>> generarReporteResumen(
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaInicio,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaFin,
@@ -129,6 +132,7 @@ public class ReporteController {
             description = "Requiere Token de EMPRESA, SUPERVISOR o EMPLEADO. Genera y descarga un documento PDF oficial " +
                     "con el desglose diario de fichajes."
     )
+    @ApiErroresLectura
     public ResponseEntity<byte[]> descargarPdfDetalle(
             @RequestParam("fechaInicio") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaInicio,
             @RequestParam("fechaFin") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaFin,
@@ -170,6 +174,7 @@ public class ReporteController {
             description = "Requiere Token de EMPRESA, SUPERVISOR o EMPLEADO. Genera y descarga un documento PDF oficial " +
                     "con el total consolidado de horas por empleado."
     )
+    @ApiErroresLectura
     public ResponseEntity<byte[]> descargarPdfResumen(
             @RequestParam("fechaInicio") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaInicio,
             @RequestParam("fechaFin") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaFin,

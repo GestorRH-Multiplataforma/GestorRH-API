@@ -13,6 +13,7 @@ import com.gestorrh.api.repository.AsignacionTurnoRepository;
 import com.gestorrh.api.repository.EmpleadoRepository;
 import com.gestorrh.api.repository.EmpresaRepository;
 import com.gestorrh.api.repository.FichajeRepository;
+import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.Authentication;
@@ -192,7 +193,8 @@ public class FichajeService {
         List<Fichaje> fichajes;
 
         if (esEmpresa) {
-            Empresa empresa = empresaRepository.findByEmail(emailAuth).orElseThrow();
+            Empresa empresa = empresaRepository.findByEmail(emailAuth)
+                    .orElseThrow(() -> new EntityNotFoundException("Error crítico: Empresa no encontrada en el sistema"));
             fichajes = fichajeRepository.findByEmpleadoEmpresaIdEmpresaAndFechaBetween(empresa.getIdEmpresa(), fechaInicio, fechaFin);
 
             if (empleadoIdFiltro != null) {
@@ -200,7 +202,8 @@ public class FichajeService {
             }
 
         } else {
-            Empleado empleadoAuth = empleadoRepository.findByEmail(emailAuth).orElseThrow();
+            Empleado empleadoAuth = empleadoRepository.findByEmail(emailAuth)
+                    .orElseThrow(() -> new EntityNotFoundException("Error crítico: Empleado no encontrado en el sistema"));
 
             if (esSupervisor) {
                 List<Fichaje> fichajesDepartamento = fichajeRepository.findByEmpleadoEmpresaIdEmpresaAndFechaBetween(empleadoAuth.getEmpresa().getIdEmpresa(), fechaInicio, fechaFin);
@@ -242,16 +245,18 @@ public class FichajeService {
         boolean esEmpresa = auth.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_EMPRESA"));
 
         Fichaje fichaje = fichajeRepository.findById(idFichaje)
-                .orElseThrow(() -> new RuntimeException("Fichaje no encontrado"));
+                .orElseThrow(() -> new EntityNotFoundException("Fichaje no encontrado"));
 
         if (esEmpresa) {
-            Empresa empresa = empresaRepository.findByEmail(emailAuth).orElseThrow();
+            Empresa empresa = empresaRepository.findByEmail(emailAuth)
+                    .orElseThrow(() -> new EntityNotFoundException("Error crítico: Empresa no encontrada en el sistema"));
             if (!fichaje.getEmpleado().getEmpresa().getIdEmpresa().equals(empresa.getIdEmpresa())) {
                 log.warn("VIOLACIÓN DE SEGURIDAD: La empresa '{}' intentó modificar el fichaje ID {} de otra empresa.", emailAuth, idFichaje);
                 throw new RuntimeException("Acceso denegado: El fichaje pertenece a otra empresa.");
             }
         } else {
-            Empleado supervisor = empleadoRepository.findByEmail(emailAuth).orElseThrow();
+            Empleado supervisor = empleadoRepository.findByEmail(emailAuth)
+                    .orElseThrow(() -> new EntityNotFoundException("Error crítico: Supervisor no encontrado en el sistema"));
 
             if (fichaje.getEmpleado().getIdEmpleado().equals(supervisor.getIdEmpleado())) {
                 log.warn("DENEGADO: El supervisor '{}' intentó modificar su propio fichaje ID {}.", emailAuth, idFichaje);
@@ -300,7 +305,7 @@ public class FichajeService {
     private Empleado obtenerEmpleadoAutenticado() {
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
         return empleadoRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("Empleado no encontrado"));
+                .orElseThrow(() -> new EntityNotFoundException("Empleado no encontrado"));
     }
 
     /**

@@ -1,5 +1,8 @@
 package com.gestorrh.api.controller;
 
+import com.gestorrh.api.annotation.ApiErroresAccion;
+import com.gestorrh.api.annotation.ApiErroresEscritura;
+import com.gestorrh.api.annotation.ApiErroresLectura;
 import com.gestorrh.api.dto.ausencia.PeticionAusenciaDTO;
 import com.gestorrh.api.dto.ausencia.PeticionRevisionAusenciaDTO;
 import com.gestorrh.api.dto.ausencia.RespuestaAusenciaDTO;
@@ -60,6 +63,7 @@ public class AusenciaController {
     @PreAuthorize("hasAnyRole('EMPRESA', 'EMPLEADO')")
     @Operation(summary = "Listar tipos de ausencia", description = "Requiere Token de EMPRESA, SUPERVISOR o EMPLEADO. " +
             "Diccionario para formularios (ej: VACACIONES, BAJA_MEDICA).")
+    @ApiErroresLectura
     public ResponseEntity<List<TipoAusencia>> obtenerTiposAusencia() {
         return ResponseEntity.ok(Arrays.asList(TipoAusencia.values()));
     }
@@ -79,6 +83,7 @@ public class AusenciaController {
     @PreAuthorize("hasAnyRole('EMPRESA', 'EMPLEADO')")
     @Operation(summary = "Listar estados de ausencia", description = "Requiere Token de EMPRESA, SUPERVISOR o EMPLEADO. " +
             "Diccionario de estados (ej: PENDIENTE, APROBADA).")
+    @ApiErroresLectura
     public ResponseEntity<List<EstadoAusencia>> obtenerEstadosAusencia() {
         return ResponseEntity.ok(Arrays.asList(EstadoAusencia.values()));
     }
@@ -103,6 +108,7 @@ public class AusenciaController {
             description = "Requiere Token de EMPLEADO (o SUPERVISOR). Permite enviar los datos de la ausencia (JSON) " +
                     "junto con un archivo PDF/Imagen opcional como justificante."
     )
+    @ApiErroresEscritura
     public ResponseEntity<RespuestaAusenciaDTO> crearAusencia(
             @Parameter(description = "Datos de la ausencia en formato JSON", content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE))
             @RequestPart("datos") @Valid PeticionAusenciaDTO peticion,
@@ -131,6 +137,7 @@ public class AusenciaController {
             description = "Requiere Token de EMPLEADO (o SUPERVISOR). Recupera el historial de ausencias solicitadas " +
                     "por el usuario autenticado, filtrable por estado."
     )
+    @ApiErroresLectura
     public ResponseEntity<List<RespuestaAusenciaDTO>> obtenerMisAusencias(
             @RequestParam(value = "estado", required = false) EstadoAusencia estado) {
         List<RespuestaAusenciaDTO> lista = ausenciaService.obtenerMisAusencias(estado);
@@ -158,6 +165,7 @@ public class AusenciaController {
             description = "Requiere Token de EMPLEADO (o SUPERVISOR). Permite modificar datos o reemplazar el " +
                     "justificante de una ausencia que aún esté en estado PENDIENTE."
     )
+    @ApiErroresAccion
     public ResponseEntity<RespuestaAusenciaDTO> actualizarMiAusencia(
             @PathVariable("id") Long id,
             @Parameter(description = "Datos de la ausencia en formato JSON", content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE))
@@ -187,6 +195,7 @@ public class AusenciaController {
             description = "Requiere Token de EMPLEADO (o SUPERVISOR). Elimina una solicitud propia siempre que aún no " +
                     "haya sido procesada (siga PENDIENTE)."
     )
+    @ApiErroresAccion
     public ResponseEntity<Void> eliminarMiAusencia(@PathVariable("id") Long id) {
         ausenciaService.eliminarMiAusencia(id);
         return ResponseEntity.noContent().build();
@@ -211,6 +220,7 @@ public class AusenciaController {
             description = "Requiere Token de EMPRESA o SUPERVISOR. La EMPRESA ve todas las solicitudes; el SUPERVISOR " +
                     "ve las de su departamento. Permite filtrar por estado (ej: PENDIENTE)."
     )
+    @ApiErroresLectura
     public ResponseEntity<List<RespuestaAusenciaDTO>> listarAusenciasPermitidas(
             @RequestParam(value = "estado", required = false) EstadoAusencia estado) {
         List<RespuestaAusenciaDTO> lista = ausenciaService.obtenerAusenciasPermitidas(estado);
@@ -237,6 +247,7 @@ public class AusenciaController {
             description = "Requiere Token de EMPRESA o SUPERVISOR. Procesa una solicitud cambiando su estado a " +
                     "APROBADA o DENEGADA y añade un comentario de revisión."
     )
+    @ApiErroresAccion
     public ResponseEntity<RespuestaAusenciaDTO> revisarAusencia(
             @PathVariable("id") Long id,
             @Valid @RequestBody PeticionRevisionAusenciaDTO peticion) {
@@ -263,6 +274,7 @@ public class AusenciaController {
             description = "Requiere Token de EMPRESA, SUPERVISOR o EMPLEADO. Descarga el archivo físico del justificante " +
                     "asociado a una ausencia."
     )
+    @ApiErroresLectura
     public ResponseEntity<Resource> descargarJustificante(@PathVariable String nombreArchivo) {
         Resource resource = fileStorageService.cargarArchivoComoRecurso(nombreArchivo);
         return ResponseEntity.ok()

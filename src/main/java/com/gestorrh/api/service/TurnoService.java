@@ -6,6 +6,7 @@ import com.gestorrh.api.entity.Empresa;
 import com.gestorrh.api.entity.Turno;
 import com.gestorrh.api.repository.EmpresaRepository;
 import com.gestorrh.api.repository.TurnoRepository;
+import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -100,7 +101,8 @@ public class TurnoService {
      * @param idTurno Identificador único del turno que se desea actualizar.
      * @param peticion Nuevos datos (descripción, hora de inicio y hora de fin) para el turno.
      * @return {@link RespuestaTurnoDTO} con la información actualizada y persistida del turno.
-     * @throws RuntimeException Si el turno no existe en la base de datos o si no pertenece a la empresa autenticada.
+     * @throws EntityNotFoundException Si el turno no se encuentra en la base de datos.
+     * @throws RuntimeException Si no pertenece a la empresa autenticada.
      */
     @Transactional
     public RespuestaTurnoDTO actualizarTurno(Long idTurno, PeticionTurnoDTO peticion) {
@@ -109,7 +111,7 @@ public class TurnoService {
         Empresa empresaLogueada = obtenerEmpresaAutenticada();
 
         Turno turno = turnoRepository.findById(idTurno)
-                .orElseThrow(() -> new RuntimeException("Turno no encontrado con ID: " + idTurno));
+                .orElseThrow(() -> new EntityNotFoundException("Turno no encontrado con ID: " + idTurno));
 
         if (!turno.getEmpresa().getIdEmpresa().equals(empresaLogueada.getIdEmpresa())) {
             throw new RuntimeException("Acceso denegado: Este turno no pertenece a tu empresa.");
@@ -133,7 +135,8 @@ public class TurnoService {
      * </p>
      *
      * @param idTurno Identificador único del turno que se pretende eliminar de forma definitiva.
-     * @throws RuntimeException Si el turno no se encuentra o el acceso es denegado por falta de permisos de propiedad.
+     * @throws EntityNotFoundException Si el turno no se encuentra en la base de datos.
+     * @throws RuntimeException El acceso es denegado por falta de permisos de propiedad.
      */
     @Transactional
     public void eliminarTurno(Long idTurno) {
@@ -141,7 +144,7 @@ public class TurnoService {
         Empresa empresaLogueada = obtenerEmpresaAutenticada();
 
         Turno turno = turnoRepository.findById(idTurno)
-                .orElseThrow(() -> new RuntimeException("Turno no encontrado con ID: " + idTurno));
+                .orElseThrow(() -> new EntityNotFoundException("Turno no encontrado con ID: " + idTurno));
 
         if (!turno.getEmpresa().getIdEmpresa().equals(empresaLogueada.getIdEmpresa())) {
             throw new RuntimeException("Acceso denegado: Este turno no pertenece a tu empresa.");
@@ -155,12 +158,12 @@ public class TurnoService {
      * Utiliza el email extraído del SecurityContextHolder para realizar la búsqueda en el repositorio.
      *
      * @return {@link Empresa} Entidad que representa a la empresa autenticada.
-     * @throws RuntimeException Si no se encuentra ninguna empresa con el correo electrónico del contexto de seguridad.
+     * @throws EntityNotFoundException Si no se encuentra ninguna empresa con el correo electrónico del contexto de seguridad.
      */
     private Empresa obtenerEmpresaAutenticada() {
         String correoEmpresaAuth = SecurityContextHolder.getContext().getAuthentication().getName();
         return empresaRepository.findByEmail(correoEmpresaAuth)
-                .orElseThrow(() -> new RuntimeException("Empresa no encontrada en el sistema"));
+                .orElseThrow(() -> new EntityNotFoundException("Empresa no encontrada en el sistema"));
     }
 
     /**

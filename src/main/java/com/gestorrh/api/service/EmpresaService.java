@@ -3,6 +3,7 @@ package com.gestorrh.api.service;
 import com.gestorrh.api.dto.empresa.*;
 import com.gestorrh.api.entity.Empresa;
 import com.gestorrh.api.repository.EmpresaRepository;
+import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -136,12 +137,12 @@ public class EmpresaService {
      * Recupera la entidad {@link Empresa} completa desde el repositorio basándose en la identidad del usuario autenticado.
      *
      * @return {@link Empresa} Entidad persistente de la empresa.
-     * @throws RuntimeException Si la empresa no existe en el sistema.
+     * @throws EntityNotFoundException Si la empresa no existe en el sistema.
      */
     private Empresa obtenerEmpresaAutenticada() {
         String emailAuth = SecurityContextHolder.getContext().getAuthentication().getName();
         return empresaRepository.findByEmail(emailAuth)
-                .orElseThrow(() -> new RuntimeException("Error crítico: Empresa no encontrada en el sistema"));
+                .orElseThrow(() -> new EntityNotFoundException("Error crítico: Empresa no encontrada en el sistema"));
     }
 
     /**
