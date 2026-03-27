@@ -5,6 +5,7 @@ import com.gestorrh.api.dto.autenticacion.PeticionLoginDTO;
 import com.gestorrh.api.dto.autenticacion.RespuestaLoginDTO;
 import com.gestorrh.api.service.AutenticacionService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirements;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -46,7 +47,10 @@ public class AutenticacionController {
     @PostMapping("/login-empresa")
     @Operation(
             summary = "Login de Empresa",
-            description = "Punto de entrada público. Introduce credenciales de empresa para obtener un Token con rol EMPRESA."
+            description = "Punto de entrada público. Introduce credenciales de empresa para obtener un Token con rol EMPRESA.",
+            responses = {
+                    @ApiResponse(responseCode = "201", description = "Login correcto")
+            }
     )
     @SecurityRequirements()
     @ApiErroresRegistro
@@ -71,7 +75,10 @@ public class AutenticacionController {
     @PostMapping("/login-empleado")
     @Operation(
             summary = "Login de Empleado / Supervisor",
-            description = "Punto de entrada público. Introduce credenciales de empleado para obtener un Token con rol EMPLEADO o SUPERVISOR."
+            description = "Punto de entrada público. Introduce credenciales de empleado para obtener un Token con rol EMPLEADO o SUPERVISOR.",
+            responses = {
+                    @ApiResponse(responseCode = "201", description = "Login correcto")
+            }
     )
     @SecurityRequirements()
     @ApiErroresRegistro

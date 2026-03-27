@@ -8,6 +8,7 @@ import com.gestorrh.api.dto.asignacion.RespuestaAsignacionTurnoDTO;
 import com.gestorrh.api.entity.enums.ModalidadTurno;
 import com.gestorrh.api.service.AsignacionTurnoService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -55,7 +56,10 @@ public class AsignacionTurnoController {
     @PreAuthorize("hasAnyRole('EMPRESA', 'EMPLEADO')")
     @Operation(
             summary = "Crear asignación de turno",
-            description = "Requiere Token de EMPRESA o SUPERVISOR. Asigna un turno específico a un empleado en una fecha y modalidad determinada."
+            description = "Requiere Token de EMPRESA o SUPERVISOR. Asigna un turno específico a un empleado en una fecha y modalidad determinada.",
+            responses = {
+                    @ApiResponse(responseCode = "201", description = "Asignación de turno creada con éxito")
+            }
     )
     @ApiErroresEscritura
     public ResponseEntity<RespuestaAsignacionTurnoDTO> crearAsignacion(@Valid @RequestBody PeticionAsignacionTurnoDTO peticion) {
@@ -157,7 +161,10 @@ public class AsignacionTurnoController {
     @Operation(
             summary = "Eliminar asignación",
             description = "Requiere Token de EMPRESA o SUPERVISOR. Borra de forma permanente una asignación de turno del " +
-                    "sistema por correcciones de planificación."
+                    "sistema por correcciones de planificación.",
+            responses = {
+                    @ApiResponse(responseCode = "204", description = "Asignación eliminada con éxito")
+            }
     )
     @ApiErroresAccion
     public ResponseEntity<Void> eliminarAsignacion(@PathVariable("id") Long id) {

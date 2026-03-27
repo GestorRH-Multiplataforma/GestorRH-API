@@ -8,6 +8,7 @@ import com.gestorrh.api.dto.fichaje.PeticionFichajeSalidaDTO;
 import com.gestorrh.api.dto.fichaje.RespuestaFichajeDTO;
 import com.gestorrh.api.service.FichajeService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -54,7 +55,10 @@ public class FichajeController {
     @PreAuthorize("hasAnyRole('EMPLEADO', 'SUPERVISOR')")
     @Operation(
             summary = "Fichar entrada",
-            description = "Requiere Token de EMPLEADO o SUPERVISOR. Registra el inicio de la jornada laboral del usuario autenticado."
+            description = "Requiere Token de EMPLEADO o SUPERVISOR. Registra el inicio de la jornada laboral del usuario autenticado.",
+            responses = {
+                    @ApiResponse(responseCode = "201", description = "Fichaje creado con éxito")
+            }
     )
     @ApiErroresEscritura
     public ResponseEntity<RespuestaFichajeDTO> ficharEntrada(@Valid @RequestBody PeticionFichajeEntradaDTO peticion) {

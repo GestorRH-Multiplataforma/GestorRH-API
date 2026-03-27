@@ -6,6 +6,7 @@ import com.gestorrh.api.annotation.ApiErroresRegistro;
 import com.gestorrh.api.dto.empresa.*;
 import com.gestorrh.api.service.EmpresaService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirements;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -45,7 +46,10 @@ public class EmpresaController {
     @PostMapping("/registro")
     @Operation(
             summary = "Registrar nueva Empresa",
-            description = "Endpoint público para dar de alta una nueva empresa en el sistema. No requiere autenticación."
+            description = "Endpoint público para dar de alta una nueva empresa en el sistema. No requiere autenticación.",
+            responses = {
+                    @ApiResponse(responseCode = "201", description = "Empresa registrada con éxito")
+            }
     )
     @SecurityRequirements()
     @ApiErroresRegistro
@@ -104,7 +108,12 @@ public class EmpresaController {
      */
     @PutMapping("/me/contrasena")
     @PreAuthorize("hasRole('EMPRESA')")
-    @Operation(summary = "Cambiar mi contraseña", description = "Requiere Token de EMPRESA. Cambia la contraseña de acceso actual.")
+    @Operation(summary = "Cambiar mi contraseña",
+            description = "Requiere Token de EMPRESA. Cambia la contraseña de acceso actual.",
+            responses = {
+                    @ApiResponse(responseCode = "204", description = "Contraseña cambiada con éxito")
+            }
+    )
     @ApiErroresAccion
     public ResponseEntity<Void> cambiarMiContrasena(@Valid @RequestBody PeticionCambiarPasswordEmpresaDTO peticion) {
         empresaService.cambiarMiContrasena(peticion);
@@ -123,7 +132,12 @@ public class EmpresaController {
      */
     @DeleteMapping("/me")
     @PreAuthorize("hasRole('EMPRESA')")
-    @Operation(summary = "Eliminar mi empresa", description = "Requiere Token de EMPRESA. Borrado lógico/físico irreversible de la cuenta.")
+    @Operation(summary = "Eliminar mi empresa",
+            description = "Requiere Token de EMPRESA. Borrado lógico/físico irreversible de la cuenta.",
+            responses = {
+                    @ApiResponse(responseCode = "204", description = "Empresa eliminada con éxito")
+            }
+    )
     @ApiErroresAccion
     public ResponseEntity<Void> eliminarMiEmpresa() {
         empresaService.eliminarMiEmpresa();
