@@ -36,12 +36,22 @@ public interface FichajeRepository extends JpaRepository<Fichaje, Long> {
 
     /**
      * Recupera todos los fichajes de una empresa en un rango de fechas.
+     * <p>
+     * Utiliza JOIN FETCH para traer al empleado en la misma consulta y evitar el problema N+1.
+     * </p>
      * @param idEmpresa El ID de la empresa.
      * @param fechaInicio Fecha de inicio del periodo.
      * @param fechaFin Fecha de fin del periodo.
      * @return Lista de fichajes de todos los empleados de la empresa en ese periodo.
      */
-    List<Fichaje> findByEmpleadoEmpresaIdEmpresaAndFechaBetween(Long idEmpresa, LocalDate fechaInicio, LocalDate fechaFin);
+    @Query("SELECT f FROM Fichaje f " +
+            "JOIN FETCH f.empleado e " +
+            "WHERE e.empresa.idEmpresa = :idEmpresa " +
+            "AND f.fecha BETWEEN :fechaInicio AND :fechaFin")
+    List<Fichaje> findByEmpleadoEmpresaIdEmpresaAndFechaBetween(
+            @Param("idEmpresa") Long idEmpresa,
+            @Param("fechaInicio") LocalDate fechaInicio,
+            @Param("fechaFin") LocalDate fechaFin);
 
     /**
      * Obtiene un ranking de los empleados con más retrasos (fichajes marcados "fuera de horario").
