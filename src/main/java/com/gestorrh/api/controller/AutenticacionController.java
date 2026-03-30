@@ -49,7 +49,7 @@ public class AutenticacionController {
             summary = "Login de Empresa",
             description = "Punto de entrada público. Introduce credenciales de empresa para obtener un Token con rol EMPRESA.",
             responses = {
-                    @ApiResponse(responseCode = "201", description = "Login correcto")
+                    @ApiResponse(responseCode = "200", description = "Login correcto")
             }
     )
     @SecurityRequirements()
@@ -77,7 +77,7 @@ public class AutenticacionController {
             summary = "Login de Empleado / Supervisor",
             description = "Punto de entrada público. Introduce credenciales de empleado para obtener un Token con rol EMPLEADO o SUPERVISOR.",
             responses = {
-                    @ApiResponse(responseCode = "201", description = "Login correcto")
+                    @ApiResponse(responseCode = "200", description = "Login correcto")
             }
     )
     @SecurityRequirements()

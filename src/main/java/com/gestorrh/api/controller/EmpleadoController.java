@@ -142,7 +142,7 @@ public class EmpleadoController {
             summary = "Tramitar baja de empleado",
             description = "Requiere Token de EMPRESA. Establece la fecha de baja de un empleado, revocando su acceso al sistema a partir de ese día.",
             responses = {
-                    @ApiResponse(responseCode = "201", description = "Empleado dado de baja con éxito")
+                    @ApiResponse(responseCode = "204", description = "Empleado dado de baja con éxito")
             }
     )
     @ApiErroresAccion
@@ -175,7 +175,7 @@ public class EmpleadoController {
             summary = "Readmitir empleado dado de baja",
             description = "Requiere Token de EMPRESA. Reinstaura a un empleado previamente dado de baja y le genera una nueva contraseña de acceso.",
             responses = {
-                    @ApiResponse(responseCode = "201", description = "Empleado readmitido con éxito")
+                    @ApiResponse(responseCode = "200", description = "Empleado readmitido con éxito")
             }
     )
     @ApiErroresAccion
