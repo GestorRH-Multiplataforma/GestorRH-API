@@ -53,8 +53,9 @@ public class ConfigSwagger {
                                 "<h3>Credenciales de prueba (Entorno Local/Dev)</h3>" +
                                 "El sistema inicializa automáticamente estos datos para facilitar las pruebas:" +
                                 "<ul>" +
-                                "<li><b>Empresa Admin:</b> <code>admin@gestorrh.com</code> | Contraseña: <code>1234</code></li><br>" +
-                                "<li><b>Empleado Test:</b> <code>empleado@gestorrh.com</code> | Contraseña: <code>1234</code></li>" +
+                                "<li><b>EMPRESA:</b> <code>admin@tech.com</code> <i>(Usar Login Empresa)</i> | Contraseña: <code>123456</code></li><br>" +
+                                "<li><b>SUPERVISOR:</b> <code>super@tech.com</code> <i>(Usar Login Empleado)</i> | Contraseña: <code>123456</code></li><br>" +
+                                "<li><b>EMPLEADO:</b> <code>empleado@tech.com</code> <i>(Usar Login Empleado)</i> | Contraseña: <code>123456</code></li>" +
                                 "</ul><br>" +
 
                                 "<b>Instrucciones de Seguridad:</b> Los endpoints con el candado requieren que introduzcas el Token correspondiente en el botón verde <b>Authorize</b>.")

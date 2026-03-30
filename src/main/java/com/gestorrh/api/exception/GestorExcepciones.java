@@ -9,6 +9,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -147,5 +148,35 @@ public class GestorExcepciones {
                 .build();
 
         return new ResponseEntity<>(errorResponse, HttpStatus.NOT_FOUND);
+    }
+
+    /**
+     * Maneja las excepciones de concurrencia producidas cuando dos usuarios intentan modificar el mismo registro simultáneamente.
+     * <p>
+     * Captura las excepciones de tipo {@link ObjectOptimisticLockingFailureException} lanzadas por el mecanismo de
+     * control de concurrencia optimista de JPA (anotación {@code @Version}). Retorna una respuesta
+     * {@link HttpStatus#CONFLICT} (409) informando al cliente que debe recargar los datos antes de reintentar la operación,
+     * evitando así la corrupción de datos por "actualizaciones perdidas".
+     * </p>
+     *
+     * @param ex La excepción de fallo de bloqueo optimista lanzada por Hibernate/JPA.
+     * @param request La solicitud HTTP en la que se produjo la colisión de datos.
+     * @return Una respuesta estructurada indicando el conflicto de concurrencia (409 Conflict).
+     */
+    @ExceptionHandler(ObjectOptimisticLockingFailureException.class)
+    public ResponseEntity<RespuestaErrorDTO> manejarConcurrencia(ObjectOptimisticLockingFailureException ex, HttpServletRequest request) {
+
+        log.warn("Conflicto de CONCURRENCIA en la ruta [{}]: {}", request.getRequestURI(), ex.getMessage());
+
+        RespuestaErrorDTO errorResponse = RespuestaErrorDTO.builder()
+                .timestamp(LocalDateTime.now())
+                .status(HttpStatus.CONFLICT.value())
+                .errorCode("CONFLICT")
+                .message("Los datos han sido modificados por otro usuario mientras los visualizabas. Por favor, recarga la página e inténtalo de nuevo.")
+                .path(request.getRequestURI())
+                .details(List.of("La versión del registro enviada no coincide con la versión actual en la base de datos"))
+                .build();
+
+        return new ResponseEntity<>(errorResponse, HttpStatus.CONFLICT);
     }
 }

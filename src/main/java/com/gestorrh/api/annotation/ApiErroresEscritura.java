@@ -21,6 +21,9 @@ import java.lang.annotation.Target;
 @ApiResponse(responseCode = "403", description = "Prohibido - No tienes permisos",
         content = @Content(mediaType = "application/json", schema = @Schema(implementation = RespuestaErrorDTO.class),
                 examples = @ExampleObject(value = "{\n  \"status\": 403,\n  \"errorCode\": \"FORBIDDEN\",\n  \"message\": \"Acceso denegado. No tienes el rol necesario.\"\n}")))
+@ApiResponse(responseCode = "409", description = "Conflicto de concurrencia",
+        content = @Content(mediaType = "application/json", schema = @Schema(implementation = RespuestaErrorDTO.class),
+                examples = @ExampleObject(value = "{\n  \"status\": 409,\n  \"errorCode\": \"CONFLICT\",\n  \"message\": \"Los datos han sido modificados por otro usuario mientras los visualizabas. Por favor, recarga la página e inténtalo de nuevo.\"\n}")))
 @ApiResponse(responseCode = "500", description = "Error interno del servidor",
         content = @Content(mediaType = "application/json", schema = @Schema(implementation = RespuestaErrorDTO.class),
                 examples = @ExampleObject(value = "{\n  \"status\": 500,\n  \"errorCode\": \"INTERNAL_SERVER_ERROR\",\n  \"message\": \"Error inesperado.\"\n}")))
