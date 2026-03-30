@@ -19,9 +19,16 @@ API REST desarrollada en Spring Boot para la gestión centralizada de recursos h
 ---
 
 ## Requisitos Previos
+
+Dependiendo de si quieres desarrollar o simplemente desplegar la aplicación, los requisitos varían:
+
+**Para Despliegue Completo (Recomendado):**
+- **Docker** y **Docker Compose** instalados. (No necesitas instalar Java ni Maven, la imagen se construye y ejecuta de forma autónoma).
+
+**Para Desarrollo Local:**
 - **Java 21** instalado en el sistema.
-- **Maven** para la gestión de dependencias.
-- **Docker** y **Docker Compose** (para levantar la base de datos local sin instalaciones pesadas).
+- **Maven** para la gestión de dependencias y compilación.
+- **Docker** (solo para levantar el contenedor local de PostgreSQL).
 
 ---
 
@@ -44,6 +51,31 @@ La API estará disponible en la ruta base: `http://localhost:8080/api`
 
 ---
 
+## Entorno de Producción (Despliegue con Docker)
+
+El proyecto está preparado para desplegarse en cualquier servidor (agnóstico a la nube) utilizando un enfoque *Multi-stage* con Docker.
+
+### 1. Configurar Variables de Entorno
+Copia el archivo de plantilla `.env.example` en la raíz del proyecto y renómbralo a `.env`. Rellena las variables obligatorias con tus credenciales de producción (Usuario BD, Contraseña BD y Secreto JWT).
+
+### 2. Levantar la Infraestructura Completa
+La API y su base de datos aislada se construyen y orquestan automáticamente con Docker Compose. Ejecuta:
+```bash
+docker compose -f docker-compose.prod.yml up -d --build
+```
+
+---
+
+# Documentación y Pruebas (Swagger UI)
+
+Una vez que la aplicación esté corriendo (ya sea en tu entorno local con Maven o contenedorizada con Docker), puedes probar todos los endpoints, autenticarte y ver los esquemas de datos interactivos accediendo a:
+
+`http://localhost:8080/swagger-ui/index.html`
+
+*(Nota: Recuerda que para probar los endpoints protegidos, primero debes usar el endpoint de Login y pegar el token JWT resultante en el botón "Authorize").*
+
+---
+
 ## Versionado
 
 Este proyecto utiliza **Git tags anotados** para marcar hitos funcionales y versiones relevantes de la API REST.
@@ -62,10 +94,10 @@ La estrategia de versionado sigue **Semantic Versioning** (`MAJOR.MINOR.PATCH`):
 - **`v0.8.0`** → backlog funcional principal completado.  
   Se consideran implementadas las funcionalidades principales de negocio de la API: seguridad, empresa, empleados, turnos, asignaciones, ausencias y fichajes.
 
-### Próximos hitos previstos
+- **`v0.9.0`** → infraestructura, documentación y estabilización.  
+  Incluye la contenedorización agnóstica con Docker, variables de entorno, control de concurrencia optimista y datos de prueba automatizados (DataSeeder).
 
-- **`v0.9.0`** → versión casi lista.  
-  Incluirá la documentación y estabilización técnica previas a la primera release estable.
+### Próximos hitos previstos
 
 - **`v1.0.0`** → primera versión estable.  
   Será la versión de referencia para integración con clientes y futuros despliegues, una vez completada la refactorización importante y la preparación de despliegue.
