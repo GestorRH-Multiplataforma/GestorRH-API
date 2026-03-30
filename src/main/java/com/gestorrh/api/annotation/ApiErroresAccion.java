@@ -24,6 +24,9 @@ import java.lang.annotation.Target;
 @ApiResponse(responseCode = "404", description = "Recurso no encontrado",
         content = @Content(mediaType = "application/json", schema = @Schema(implementation = RespuestaErrorDTO.class),
                 examples = @ExampleObject(value = "{\n  \"status\": 404,\n  \"errorCode\": \"NOT_FOUND\",\n  \"message\": \"El recurso sobre el que quieres actuar no existe.\"\n}")))
+@ApiResponse(responseCode = "409", description = "Conflicto de concurrencia",
+        content = @Content(mediaType = "application/json", schema = @Schema(implementation = RespuestaErrorDTO.class),
+                examples = @ExampleObject(value = "{\n  \"status\": 409,\n  \"errorCode\": \"CONFLICT\",\n  \"message\": \"Los datos han sido modificados por otro usuario mientras los visualizabas. Por favor, recarga la página e inténtalo de nuevo.\"\n}")))
 @ApiResponse(responseCode = "500", description = "Error interno",
         content = @Content(mediaType = "application/json", schema = @Schema(implementation = RespuestaErrorDTO.class),
                 examples = @ExampleObject(value = "{\n  \"status\": 500,\n  \"errorCode\": \"INTERNAL_SERVER_ERROR\",\n  \"message\": \"Error inesperado.\"\n}")))
