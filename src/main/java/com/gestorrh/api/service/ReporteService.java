@@ -50,6 +50,33 @@ public class ReporteService {
     private static final int MINUTOS_CORTESIA = 15;
     private static final DateTimeFormatter HORA_FORMATTER = DateTimeFormatter.ofPattern("HH:mm:ss");
 
+
+    /**
+     * Obtiene el nombre de la empresa asociada al usuario autenticado que ha realizado la petición.
+     * <p>
+     * Determina si el usuario posee el rol de Empresa o de Empleado y recupera el nombre correspondiente
+     * desde el repositorio adecuado. En caso de no encontrar la entidad, se devuelve "EMPRESA" como valor por defecto.
+     * </p>
+     *
+     * @return El nombre de la empresa como cadena de texto.
+     */
+    public String obtenerNombreEmpresaAutenticada() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        String email = auth.getName();
+        boolean esEmpresa = auth.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_EMPRESA"));
+
+        if (esEmpresa) {
+            return empresaRepository.findByEmail(email)
+                    .map(Empresa::getNombre)
+                    .orElse("EMPRESA");
+        } else {
+            return empleadoRepository.findByEmail(email)
+                    .map(e -> e.getEmpresa().getNombre())
+                    .orElse("EMPRESA");
+        }
+    }
+
     /**
      * Genera un reporte detallado de los fichajes realizados en un periodo temporal definido.
      * <p>

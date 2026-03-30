@@ -57,10 +57,10 @@ public class FichajeService {
      * El flujo de ejecución realiza las siguientes validaciones críticas:
      * </p>
      * <ol>
-     *   <li><b>Configuración de Sede:</b> Verifica que la empresa haya configurado sus coordenadas GPS y radio de validez.</li>
-     *   <li><b>Fichaje Duplicado:</b> Impide abrir una nueva jornada si ya existe un registro abierto (sin hora de salida) para hoy.</li>
-     *   <li><b>Geovallado:</b> Si el turno asignado es de modalidad presencial, valida que la ubicación GPS recibida esté dentro del radio permitido respecto a la sede.</li>
-     *   <li><b>Control de Puntualidad:</b> Compara la hora actual con el inicio del turno asignado (incluyendo un margen de cortesía de 15 minutos) para detectar posibles retrasos.</li>
+     * <li><b>Configuración de Sede:</b> Verifica que la empresa haya configurado sus coordenadas GPS y radio de validez.</li>
+     * <li><b>Fichaje Duplicado:</b> Impide abrir una nueva jornada si ya existe un registro abierto (sin hora de salida) para hoy.</li>
+     * <li><b>Geovallado:</b> Si el turno asignado es de modalidad presencial, valida que la ubicación GPS recibida esté dentro del radio permitido respecto a la sede.</li>
+     * <li><b>Control de Puntualidad:</b> Compara la hora actual con el inicio del turno asignado (incluyendo un margen de cortesía de 15 minutos) para detectar posibles retrasos.</li>
      * </ol>
      *
      * @param peticion Objeto {@link PeticionFichajeEntradaDTO} con las coordenadas GPS (latitud y longitud) del empleado.
@@ -83,34 +83,9 @@ public class FichajeService {
         List<AsignacionTurno> asignacionesHoy = asignacionRepository.findByEmpleadoIdEmpleadoAndFecha(empleado.getIdEmpleado(), hoy);
         AsignacionTurno asignacionActual = asignacionesHoy.isEmpty() ? null : asignacionesHoy.get(0);
 
-        String incidencias = "";
+        validarGeovalladoSiEsPresencial(empleado, asignacionActual, peticion);
 
-        if (asignacionActual != null) {
-            if (asignacionActual.getModalidad() == ModalidadTurno.PRESENCIAL) {
-                Empresa empresa = empleado.getEmpresa();
-                boolean gpsValido = geofencingService.esFichajeValido(
-                        peticion.getLatitud(), peticion.getLongitud(),
-                        empresa.getLatitudSede(), empresa.getLongitudSede(), empresa.getRadioValidez()
-                );
-
-                if (!gpsValido) {
-                    log.warn("Fichaje DENEGADO (Geovallado): El empleado '{}' intentó fichar PRESENCIAL fuera del radio permitido.", empleado.getEmail());
-                    throw new RuntimeException("Fichaje denegado: Estás fuera del radio permitido de la oficina para tu turno presencial.");
-                }
-            }
-
-            LocalDateTime horaInicioTurno = hoy.atTime(asignacionActual.getTurno().getHoraInicio());
-            if (ahora.isAfter(horaInicioTurno.plusMinutes(MINUTOS_CORTESIA))) {
-                incidencias = "Retraso en la entrada. Fichó a las " + ahora.toLocalTime() + ". ";
-                log.info("Fichaje ENTRADA (CON RETRASO): El empleado '{}' ha fichado a las {}.", empleado.getEmail(), ahora.toLocalTime());
-            } else {
-                log.info("Fichaje ENTRADA: El empleado '{}' ha fichado correctamente.", empleado.getEmail());
-            }
-
-        } else {
-            incidencias = "Fichaje registrado sin turno asignado para el día de hoy. ";
-            log.info("Fichaje ENTRADA (SIN TURNO): El empleado '{}' ha fichado sin tener turno planificado.", empleado.getEmail());
-        }
+        String incidencias = evaluarRetrasoEntrada(asignacionActual, ahora, empleado);
 
         Fichaje nuevoFichaje = Fichaje.builder()
                 .empleado(empleado)
@@ -119,7 +94,7 @@ public class FichajeService {
                 .horaEntrada(ahora)
                 .latitudEntrada(peticion.getLatitud())
                 .longitudEntrada(peticion.getLongitud())
-                .incidencias(incidencias.isEmpty() ? null : incidencias.trim())
+                .incidencias(incidencias.isEmpty() ? null : incidencias)
                 .build();
 
         nuevoFichaje = fichajeRepository.save(nuevoFichaje);
@@ -128,10 +103,12 @@ public class FichajeService {
 
     /**
      * Finaliza la jornada laboral actual registrando el fichaje de salida.
+     * <p>
      * Calcula posibles incidencias por salida anticipada si el empleado cierra el turno antes de la hora prevista.
+     * </p>
      *
      * @param peticion DTO con las coordenadas GPS del momento de salida.
-     * @return RespuestaFichajeDTO con la información actualizada incluyendo la hora de salida.
+     * @return {@link RespuestaFichajeDTO} con la información actualizada incluyendo la hora de salida.
      * @throws RuntimeException Si no hay ninguna entrada abierta para el día de hoy.
      */
     @Transactional
@@ -152,20 +129,8 @@ public class FichajeService {
         fichajeAbierto.setLatitudSalida(peticion.getLatitud());
         fichajeAbierto.setLongitudSalida(peticion.getLongitud());
 
-        if (fichajeAbierto.getAsignacion() != null) {
-            LocalDateTime horaFinTurno = hoy.atTime(fichajeAbierto.getAsignacion().getTurno().getHoraFin());
-
-            if (ahora.isBefore(horaFinTurno.minusMinutes(MINUTOS_CORTESIA))) {
-                String nuevaIncidencia = "Salida anticipada a las " + ahora.toLocalTime() + ". ";
-                String incidenciasPrevias = fichajeAbierto.getIncidencias() == null ? "" : fichajeAbierto.getIncidencias() + " | ";
-                fichajeAbierto.setIncidencias(incidenciasPrevias + nuevaIncidencia);
-                log.info("Fichaje SALIDA (ANTICIPADA): El empleado '{}' ha salido antes de tiempo a las {}.", empleado.getEmail(), ahora.toLocalTime());
-            } else {
-                log.info("Fichaje SALIDA: El empleado '{}' ha cerrado su turno correctamente.", empleado.getEmail());
-            }
-        } else {
-            log.info("Fichaje SALIDA: El empleado '{}' ha cerrado su turno (no planificado).", empleado.getEmail());
-        }
+        String incidenciasActualizadas = evaluarSalidaAnticipada(fichajeAbierto.getAsignacion(), ahora, empleado, fichajeAbierto.getIncidencias());
+        fichajeAbierto.setIncidencias(incidenciasActualizadas.isEmpty() ? null : incidenciasActualizadas);
 
         fichajeAbierto = fichajeRepository.save(fichajeAbierto);
         return mapearARespuesta(fichajeAbierto);
@@ -173,15 +138,17 @@ public class FichajeService {
 
     /**
      * Consulta el historial de fichajes bajo un rango de fechas y filtros opcionales.
+     * <p>
      * La visibilidad de los datos depende del rol:
      * - EMPRESA: Ve todos los fichajes de su plantilla.
      * - SUPERVISOR: Ve fichajes de su departamento.
      * - EMPLEADO: Ve únicamente sus propios registros.
+     * </p>
      *
      * @param fechaInicio Fecha de inicio de la búsqueda.
      * @param fechaFin Fecha de fin de la búsqueda.
      * @param empleadoIdFiltro Identificador opcional para filtrar por un empleado concreto.
-     * @return List de RespuestaFichajeDTO con los registros localizados.
+     * @return List de {@link RespuestaFichajeDTO} con los registros localizados.
      */
     @Transactional(readOnly = true)
     public List<RespuestaFichajeDTO> consultarFichajes(LocalDate fechaInicio, LocalDate fechaFin, Long empleadoIdFiltro) {
@@ -193,36 +160,11 @@ public class FichajeService {
         List<Fichaje> fichajes;
 
         if (esEmpresa) {
-            Empresa empresa = empresaRepository.findByEmail(emailAuth)
-                    .orElseThrow(() -> new EntityNotFoundException("Error crítico: Empresa no encontrada en el sistema"));
-            fichajes = fichajeRepository.findByEmpleadoEmpresaIdEmpresaAndFechaBetween(empresa.getIdEmpresa(), fechaInicio, fechaFin);
-
-            if (empleadoIdFiltro != null) {
-                fichajes = fichajes.stream().filter(f -> f.getEmpleado().getIdEmpleado().equals(empleadoIdFiltro)).collect(Collectors.toList());
-            }
-
+            fichajes = consultarFichajesComoEmpresa(emailAuth, fechaInicio, fechaFin, empleadoIdFiltro);
+        } else if (esSupervisor) {
+            fichajes = consultarFichajesComoSupervisor(emailAuth, fechaInicio, fechaFin, empleadoIdFiltro);
         } else {
-            Empleado empleadoAuth = empleadoRepository.findByEmail(emailAuth)
-                    .orElseThrow(() -> new EntityNotFoundException("Error crítico: Empleado no encontrado en el sistema"));
-
-            if (esSupervisor) {
-                List<Fichaje> fichajesDepartamento = fichajeRepository.findByEmpleadoEmpresaIdEmpresaAndFechaBetween(empleadoAuth.getEmpresa().getIdEmpresa(), fechaInicio, fechaFin);
-                fichajes = fichajesDepartamento.stream()
-                        .filter(f -> f.getEmpleado().getDepartamento().equalsIgnoreCase(empleadoAuth.getDepartamento()))
-                        .collect(Collectors.toList());
-
-                if (empleadoIdFiltro != null) {
-                    boolean accesoPermitido = fichajes.stream().anyMatch(f -> f.getEmpleado().getIdEmpleado().equals(empleadoIdFiltro))
-                            || empleadoAuth.getIdEmpleado().equals(empleadoIdFiltro);
-                    if (!accesoPermitido) {
-                        throw new RuntimeException("Acceso denegado: Solo puedes ver los fichajes de los empleados de tu departamento (" + empleadoAuth.getDepartamento() + ").");
-                    }
-                    fichajes = fichajes.stream().filter(f -> f.getEmpleado().getIdEmpleado().equals(empleadoIdFiltro)).collect(Collectors.toList());
-                }
-
-            } else {
-                fichajes = fichajeRepository.findByEmpleadoIdEmpleadoAndFechaBetween(empleadoAuth.getIdEmpleado(), fechaInicio, fechaFin);
-            }
+            fichajes = consultarFichajesComoEmpleado(emailAuth, fechaInicio, fechaFin);
         }
 
         return fichajes.stream().map(this::mapearARespuesta).collect(Collectors.toList());
@@ -230,12 +172,14 @@ public class FichajeService {
 
     /**
      * Permite a una empresa o supervisor modificar manualmente las horas de un fichaje ya registrado.
+     * <p>
      * Esta operación está estrictamente auditada y requiere un motivo justificado. Los supervisores
      * no pueden modificar sus propios fichajes.
+     * </p>
      *
      * @param idFichaje Identificador del registro a modificar.
      * @param peticion DTO con las nuevas horas y el motivo de la modificación.
-     * @return RespuestaFichajeDTO con el registro actualizado y la marca de auditoría en incidencias.
+     * @return {@link RespuestaFichajeDTO} con el registro actualizado y la marca de auditoría en incidencias.
      * @throws RuntimeException Si la modificación viola reglas de seguridad o jurisdicción de roles.
      */
     @Transactional
@@ -247,28 +191,7 @@ public class FichajeService {
         Fichaje fichaje = fichajeRepository.findById(idFichaje)
                 .orElseThrow(() -> new EntityNotFoundException("Fichaje no encontrado"));
 
-        if (esEmpresa) {
-            Empresa empresa = empresaRepository.findByEmail(emailAuth)
-                    .orElseThrow(() -> new EntityNotFoundException("Error crítico: Empresa no encontrada en el sistema"));
-            if (!fichaje.getEmpleado().getEmpresa().getIdEmpresa().equals(empresa.getIdEmpresa())) {
-                log.warn("VIOLACIÓN DE SEGURIDAD: La empresa '{}' intentó modificar el fichaje ID {} de otra empresa.", emailAuth, idFichaje);
-                throw new RuntimeException("Acceso denegado: El fichaje pertenece a otra empresa.");
-            }
-        } else {
-            Empleado supervisor = empleadoRepository.findByEmail(emailAuth)
-                    .orElseThrow(() -> new EntityNotFoundException("Error crítico: Supervisor no encontrado en el sistema"));
-
-            if (fichaje.getEmpleado().getIdEmpleado().equals(supervisor.getIdEmpleado())) {
-                log.warn("DENEGADO: El supervisor '{}' intentó modificar su propio fichaje ID {}.", emailAuth, idFichaje);
-                throw new RuntimeException("Conflicto de intereses: Como supervisor no puedes modificar tus propios fichajes. Debe hacerlo la empresa u otro supervisor.");
-            }
-
-            if (!fichaje.getEmpleado().getEmpresa().getIdEmpresa().equals(supervisor.getEmpresa().getIdEmpresa()) ||
-                    !fichaje.getEmpleado().getDepartamento().equalsIgnoreCase(supervisor.getDepartamento())) {
-                log.warn("VIOLACIÓN DE SEGURIDAD: El supervisor '{}' intentó modificar el fichaje ID {} fuera de su jurisdicción.", emailAuth, idFichaje);
-                throw new RuntimeException("Acceso denegado: Solo puedes modificar fichajes de los empleados de tu departamento.");
-            }
-        }
+        validarPermisosModificacion(fichaje, emailAuth, esEmpresa);
 
         if (peticion.getNuevaHoraEntrada() == null && peticion.getNuevaHoraSalida() == null) {
             throw new RuntimeException("Debes proporcionar al menos una nueva hora de entrada o de salida para modificar el fichaje.");
@@ -297,35 +220,134 @@ public class FichajeService {
         return mapearARespuesta(fichaje);
     }
 
-    /**
-     * Obtiene la entidad {@link Empleado} asociada al usuario autenticado en el sistema.
-     *
-     * @return Empleado que realiza la operación.
-     */
+    // MÉTODOS PRIVADOS DE REFACTORIZACIÓN (CLEAN CODE)
+
     private Empleado obtenerEmpleadoAutenticado() {
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
         return empleadoRepository.findByEmail(email)
                 .orElseThrow(() -> new EntityNotFoundException("Empleado no encontrado"));
     }
 
-    /**
-     * Valida que la empresa tenga configurada la ubicación de su sede.
-     * Es un requisito indispensable para poder realizar fichajes con geovallado.
-     *
-     * @param empresa La entidad empresa a validar.
-     */
     private void validarSedeConfigurada(Empresa empresa) {
         if (empresa.getLatitudSede() == null || empresa.getLongitudSede() == null || empresa.getRadioValidez() == null) {
             throw new RuntimeException("Operación denegada: La empresa debe configurar la ubicación de su sede en el perfil antes de permitir registrar fichajes.");
         }
     }
 
-    /**
-     * Mapea una entidad {@link Fichaje} a su correspondiente DTO de respuesta.
-     *
-     * @param f Entidad de base de datos.
-     * @return RespuestaFichajeDTO formateado para la API.
-     */
+    private void validarGeovalladoSiEsPresencial(Empleado empleado, AsignacionTurno asignacionActual, PeticionFichajeEntradaDTO peticion) {
+        if (asignacionActual != null && asignacionActual.getModalidad() == ModalidadTurno.PRESENCIAL) {
+            Empresa empresa = empleado.getEmpresa();
+            boolean gpsValido = geofencingService.esFichajeValido(
+                    peticion.getLatitud(), peticion.getLongitud(),
+                    empresa.getLatitudSede(), empresa.getLongitudSede(), empresa.getRadioValidez()
+            );
+
+            if (!gpsValido) {
+                log.warn("Fichaje DENEGADO (Geovallado): El empleado '{}' intentó fichar PRESENCIAL fuera del radio permitido.", empleado.getEmail());
+                throw new RuntimeException("Fichaje denegado: Estás fuera del radio permitido de la oficina para tu turno presencial.");
+            }
+        }
+    }
+
+    private String evaluarRetrasoEntrada(AsignacionTurno asignacion, LocalDateTime ahora, Empleado empleado) {
+        if (asignacion != null) {
+            LocalDateTime horaInicioTurno = LocalDate.now().atTime(asignacion.getTurno().getHoraInicio());
+            if (ahora.isAfter(horaInicioTurno.plusMinutes(MINUTOS_CORTESIA))) {
+                log.info("Fichaje ENTRADA (CON RETRASO): El empleado '{}' ha fichado a las {}.", empleado.getEmail(), ahora.toLocalTime());
+                return "Retraso en la entrada. Fichó a las " + ahora.toLocalTime() + ". ";
+            } else {
+                log.info("Fichaje ENTRADA: El empleado '{}' ha fichado correctamente.", empleado.getEmail());
+                return "";
+            }
+        } else {
+            log.info("Fichaje ENTRADA (SIN TURNO): El empleado '{}' ha fichado sin tener turno planificado.", empleado.getEmail());
+            return "Fichaje registrado sin turno asignado para el día de hoy. ";
+        }
+    }
+
+    private String evaluarSalidaAnticipada(AsignacionTurno asignacion, LocalDateTime ahora, Empleado empleado, String incidenciasPrevias) {
+        String incidenciasBase = (incidenciasPrevias == null) ? "" : incidenciasPrevias;
+
+        if (asignacion != null) {
+            LocalDateTime horaFinTurno = LocalDate.now().atTime(asignacion.getTurno().getHoraFin());
+
+            if (ahora.isBefore(horaFinTurno.minusMinutes(MINUTOS_CORTESIA))) {
+                String nuevaIncidencia = "Salida anticipada a las " + ahora.toLocalTime() + ". ";
+                String union = incidenciasBase.isEmpty() ? "" : " | ";
+                log.info("Fichaje SALIDA (ANTICIPADA): El empleado '{}' ha salido antes de tiempo a las {}.", empleado.getEmail(), ahora.toLocalTime());
+                return incidenciasBase + union + nuevaIncidencia;
+            } else {
+                log.info("Fichaje SALIDA: El empleado '{}' ha cerrado su turno correctamente.", empleado.getEmail());
+                return incidenciasBase;
+            }
+        } else {
+            log.info("Fichaje SALIDA: El empleado '{}' ha cerrado su turno (no planificado).", empleado.getEmail());
+            return incidenciasBase;
+        }
+    }
+
+    private List<Fichaje> consultarFichajesComoEmpresa(String emailAuth, LocalDate fechaInicio, LocalDate fechaFin, Long empleadoIdFiltro) {
+        Empresa empresa = empresaRepository.findByEmail(emailAuth)
+                .orElseThrow(() -> new EntityNotFoundException("Error crítico: Empresa no encontrada en el sistema"));
+        List<Fichaje> fichajes = fichajeRepository.findByEmpleadoEmpresaIdEmpresaAndFechaBetween(empresa.getIdEmpresa(), fechaInicio, fechaFin);
+
+        if (empleadoIdFiltro != null) {
+            return fichajes.stream().filter(f -> f.getEmpleado().getIdEmpleado().equals(empleadoIdFiltro)).collect(Collectors.toList());
+        }
+        return fichajes;
+    }
+
+    private List<Fichaje> consultarFichajesComoSupervisor(String emailAuth, LocalDate fechaInicio, LocalDate fechaFin, Long empleadoIdFiltro) {
+        Empleado supervisor = empleadoRepository.findByEmail(emailAuth)
+                .orElseThrow(() -> new EntityNotFoundException("Error crítico: Supervisor no encontrado en el sistema"));
+
+        List<Fichaje> fichajesDepartamento = fichajeRepository.findByEmpleadoEmpresaIdEmpresaAndFechaBetween(supervisor.getEmpresa().getIdEmpresa(), fechaInicio, fechaFin);
+        List<Fichaje> fichajes = fichajesDepartamento.stream()
+                .filter(f -> f.getEmpleado().getDepartamento().equalsIgnoreCase(supervisor.getDepartamento()))
+                .collect(Collectors.toList());
+
+        if (empleadoIdFiltro != null) {
+            boolean accesoPermitido = fichajes.stream().anyMatch(f -> f.getEmpleado().getIdEmpleado().equals(empleadoIdFiltro))
+                    || supervisor.getIdEmpleado().equals(empleadoIdFiltro);
+            if (!accesoPermitido) {
+                throw new RuntimeException("Acceso denegado: Solo puedes ver los fichajes de los empleados de tu departamento (" + supervisor.getDepartamento() + ").");
+            }
+            return fichajes.stream().filter(f -> f.getEmpleado().getIdEmpleado().equals(empleadoIdFiltro)).collect(Collectors.toList());
+        }
+        return fichajes;
+    }
+
+    private List<Fichaje> consultarFichajesComoEmpleado(String emailAuth, LocalDate fechaInicio, LocalDate fechaFin) {
+        Empleado empleadoAuth = empleadoRepository.findByEmail(emailAuth)
+                .orElseThrow(() -> new EntityNotFoundException("Error crítico: Empleado no encontrado en el sistema"));
+        return fichajeRepository.findByEmpleadoIdEmpleadoAndFechaBetween(empleadoAuth.getIdEmpleado(), fechaInicio, fechaFin);
+    }
+
+    private void validarPermisosModificacion(Fichaje fichaje, String emailAuth, boolean esEmpresa) {
+        if (esEmpresa) {
+            Empresa empresa = empresaRepository.findByEmail(emailAuth)
+                    .orElseThrow(() -> new EntityNotFoundException("Error crítico: Empresa no encontrada en el sistema"));
+            if (!fichaje.getEmpleado().getEmpresa().getIdEmpresa().equals(empresa.getIdEmpresa())) {
+                log.warn("VIOLACIÓN DE SEGURIDAD: La empresa '{}' intentó modificar el fichaje ID {} de otra empresa.", emailAuth, fichaje.getIdFichaje());
+                throw new RuntimeException("Acceso denegado: El fichaje pertenece a otra empresa.");
+            }
+        } else {
+            Empleado supervisor = empleadoRepository.findByEmail(emailAuth)
+                    .orElseThrow(() -> new EntityNotFoundException("Error crítico: Supervisor no encontrado en el sistema"));
+
+            if (fichaje.getEmpleado().getIdEmpleado().equals(supervisor.getIdEmpleado())) {
+                log.warn("DENEGADO: El supervisor '{}' intentó modificar su propio fichaje ID {}.", emailAuth, fichaje.getIdFichaje());
+                throw new RuntimeException("Conflicto de intereses: Como supervisor no puedes modificar tus propios fichajes. Debe hacerlo la empresa u otro supervisor.");
+            }
+
+            if (!fichaje.getEmpleado().getEmpresa().getIdEmpresa().equals(supervisor.getEmpresa().getIdEmpresa()) ||
+                    !fichaje.getEmpleado().getDepartamento().equalsIgnoreCase(supervisor.getDepartamento())) {
+                log.warn("VIOLACIÓN DE SEGURIDAD: El supervisor '{}' intentó modificar el fichaje ID {} fuera de su jurisdicción.", emailAuth, fichaje.getIdFichaje());
+                throw new RuntimeException("Acceso denegado: Solo puedes modificar fichajes de los empleados de tu departamento.");
+            }
+        }
+    }
+
     private RespuestaFichajeDTO mapearARespuesta(Fichaje f) {
         return RespuestaFichajeDTO.builder()
                 .idFichaje(f.getIdFichaje())
