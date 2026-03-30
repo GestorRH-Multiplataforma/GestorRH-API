@@ -3,9 +3,6 @@ package com.gestorrh.api.controller;
 import com.gestorrh.api.annotation.ApiErroresLectura;
 import com.gestorrh.api.dto.reporte.ReporteDetalleDTO;
 import com.gestorrh.api.dto.reporte.ReporteResumenDTO;
-import com.gestorrh.api.entity.Empresa;
-import com.gestorrh.api.repository.EmpleadoRepository;
-import com.gestorrh.api.repository.EmpresaRepository;
 import com.gestorrh.api.service.ReportePdfService;
 import com.gestorrh.api.service.ReporteService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -17,8 +14,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
@@ -43,8 +38,6 @@ public class ReporteController {
 
     private final ReporteService reporteService;
     private final ReportePdfService reportePdfService;
-    private final EmpleadoRepository empleadoRepository;
-    private final EmpresaRepository empresaRepository;
 
     /**
      * Obtiene el historial pormenorizado de fichajes y cálculos de horas realizados en un rango de fechas.
@@ -140,17 +133,12 @@ public class ReporteController {
 
         List<ReporteDetalleDTO> datos = reporteService.obtenerReporteDetallado(fechaInicio, fechaFin, idEmpleado);
 
-        String nombreEmpresa = obtenerNombreEmpresaAutenticada();
-        String subtitulo = "Del " + fechaInicio.format(DateTimeFormatter.ofPattern("dd/MM/yyyy")) +
-                " al " + fechaFin.format(DateTimeFormatter.ofPattern("dd/MM/yyyy"));
+        String nombreEmpresa = reporteService.obtenerNombreEmpresaAutenticada();
+        String subtitulo = construirSubtituloFechas(fechaInicio, fechaFin);
 
         byte[] pdfBytes = reportePdfService.generarPdfDetalle(nombreEmpresa, subtitulo, datos);
 
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_PDF);
-        headers.setContentDispositionFormData("attachment", "Reporte_Detalle_" + fechaInicio + ".pdf");
-
-        return new ResponseEntity<>(pdfBytes, headers, HttpStatus.OK);
+        return construirRespuestaPdf(pdfBytes, "Reporte_Detalle_" + fechaInicio + ".pdf");
     }
 
     /**
@@ -182,38 +170,37 @@ public class ReporteController {
 
         List<ReporteResumenDTO> datos = reporteService.obtenerReporteResumen(fechaInicio, fechaFin, idEmpleado);
 
-        String nombreEmpresa = obtenerNombreEmpresaAutenticada();
-        String subtitulo = "Del " + fechaInicio.format(DateTimeFormatter.ofPattern("dd/MM/yyyy")) +
-                " al " + fechaFin.format(DateTimeFormatter.ofPattern("dd/MM/yyyy"));
+        String nombreEmpresa = reporteService.obtenerNombreEmpresaAutenticada();
+        String subtitulo = construirSubtituloFechas(fechaInicio, fechaFin);
 
         byte[] pdfBytes = reportePdfService.generarPdfResumen(nombreEmpresa, subtitulo, datos);
 
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_PDF);
-        headers.setContentDispositionFormData("attachment", "Reporte_Resumen_" + fechaInicio + ".pdf");
-
-        return new ResponseEntity<>(pdfBytes, headers, HttpStatus.OK);
+        return construirRespuestaPdf(pdfBytes, "Reporte_Resumen_" + fechaInicio + ".pdf");
     }
 
+    /**
+     * Construye la cadena de subtítulo con el rango de fechas formateado para los documentos PDF.
+     *
+     * @param fechaInicio Fecha de inicio del rango.
+     * @param fechaFin Fecha de fin del rango.
+     * @return Cadena con el formato "Del dd/MM/yyyy al dd/MM/yyyy".
+     */
+    private String construirSubtituloFechas(LocalDate fechaInicio, LocalDate fechaFin) {
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+        return "Del " + fechaInicio.format(formatter) + " al " + fechaFin.format(formatter);
+    }
 
     /**
-     * Obtiene el nombre de la empresa asociada al usuario que ha realizado la petición.
-     * <p>
-     * Determina si el usuario es una Empresa o un Empleado y recupera el nombre correspondiente
-     * desde el repositorio adecuado.
-     * </p>
+     * Construye la respuesta HTTP estándar para la descarga de un archivo PDF.
      *
-     * @return El nombre de la empresa como cadena de texto.
+     * @param pdfBytes Contenido binario del documento PDF generado.
+     * @param nombreArchivo Nombre del archivo que se propondrá en la descarga.
+     * @return ResponseEntity con el PDF, las cabeceras de tipo de contenido y disposición de archivo.
      */
-    private String obtenerNombreEmpresaAutenticada() {
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        String email = auth.getName();
-        boolean esEmpresa = auth.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_EMPRESA"));
-
-        if (esEmpresa) {
-            return empresaRepository.findByEmail(email).map(Empresa::getNombre).orElse("EMPRESA");
-        } else {
-            return empleadoRepository.findByEmail(email).map(e -> e.getEmpresa().getNombre()).orElse("EMPRESA");
-        }
+    private ResponseEntity<byte[]> construirRespuestaPdf(byte[] pdfBytes, String nombreArchivo) {
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_PDF);
+        headers.setContentDispositionFormData("attachment", nombreArchivo);
+        return new ResponseEntity<>(pdfBytes, headers, HttpStatus.OK);
     }
 }
