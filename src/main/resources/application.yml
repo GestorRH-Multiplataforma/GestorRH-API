@@ -25,9 +25,9 @@ server:
 file:
   upload-dir: uploads/ausencias
 
-# CONFIGURACIÓN DE SEGURIDAD (JWT). Si se lleva a produccion hay que quitar esta clave de aqui
+# CONFIGURACIÓN DE SEGURIDAD (JWT).
 jwt:
-  secret: 404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970
+  secret: ${JWT_SECRET:mi_clave_secreta_de_desarrollo_local_gestorrh_2026_super_segura}
   expiration: 86400000
 
 # CONFIGURACIÓN DE SWAGGER / OPENAPI
