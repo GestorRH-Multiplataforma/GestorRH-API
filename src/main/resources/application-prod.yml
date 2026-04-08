@@ -2,8 +2,8 @@ spring:
   datasource:
     # Si la variable DB_URL existe, la usa. Si no, usa localhost.
     url: ${DB_URL:jdbc:postgresql://localhost:5432/gestion_plantillas}
-    username: ${DB_USERNAME:admin}
-    password: ${DB_PASSWORD:admin}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
   jpa:
     hibernate:
       ddl-auto: ${DB_DDL_AUTO:validate}
