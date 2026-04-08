@@ -97,11 +97,17 @@ La estrategia de versionado sigue **Semantic Versioning** (`MAJOR.MINOR.PATCH`):
 - **`v0.9.0`** → infraestructura, documentación y estabilización.  
   Incluye la contenedorización agnóstica con Docker, variables de entorno, control de concurrencia optimista y datos de prueba automatizados (DataSeeder).
 
-### Próximos hitos previstos
-
 - **`v1.0.0`** → primera versión estable.  
-  Será la versión de referencia para integración con clientes y futuros despliegues, una vez completada la refactorización importante y la preparación de despliegue.
+  Versión de referencia para integración con clientes y futuros despliegues, con la arquitectura base consolidada, preparación para producción y licencia aplicada.
 
 ### Criterio de uso
 
 Para integración con clientes y despliegue, la referencia será siempre la **última versión estable aprobada**, no necesariamente el último commit de la rama `main`.
+
+---
+
+## Licencia
+
+Este proyecto está bajo la Licencia Apache 2.0 - mira el archivo [LICENSE](LICENSE) para más detalles.
+
+*Eres libre de utilizar, modificar y distribuir este software, siempre y cuando se incluya una copia de la licencia y se respeten los términos de la misma.*
