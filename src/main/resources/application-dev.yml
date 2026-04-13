@@ -24,3 +24,8 @@ logging:
     com.gestorrh.api.service: INFO
     com.gestorrh.api.exception: INFO
     com.gestorrh.api.config: INFO
+
+# CONFIGURACIÓN DE SEGURIDAD (JWT).
+jwt:
+  secret: ${JWT_SECRET:zXo9cM8yK2qR6aT7vN1bW5eH3gJ6fL0uP0sD8aA2kV4=}
+  expiration: 86400000
