@@ -2,7 +2,7 @@
 
 API REST desarrollada en Spring Boot para la gestión centralizada de recursos humanos, control de turnos, ausencias y validación de fichaje móvil con geovallado.
 
-**Portal de Documentación (API REST & Código):** [Acceder al portal interactivo](https://frangc2510.github.io/GestorRH-API/) 
+**Portal de Documentación (API REST & Código):** [Acceder al portal interactivo](https://gestorrh-multiplataforma.github.io/GestorRH-API/) 
 *(Desplegado automáticamente mediante pipeline CI/CD en GitHub Pages. Incluye Swagger UI y Javadoc).*
 
 ---
