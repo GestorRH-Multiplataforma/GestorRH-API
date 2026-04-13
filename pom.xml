@@ -159,31 +159,24 @@
 					<plugin>
 						<groupId>org.springframework.boot</groupId>
 						<artifactId>spring-boot-maven-plugin</artifactId>
-						<configuration>
-							<excludes>
-								<exclude>
-									<groupId>org.projectlombok</groupId>
-									<artifactId>lombok</artifactId>
-								</exclude>
-							</excludes>
-						</configuration>
 						<executions>
 							<execution>
 								<id>pre-integration-test</id>
-								<goals>
-									<goal>start</goal>
-								</goals>
+								<goals><goal>start</goal></goals>
 								<configuration>
-									<profiles>
-										<profile>test</profile>
-									</profiles>
+									<wait>1000</wait>
+									<arguments>
+										<argument>--spring.datasource.url=jdbc:h2:mem:swaggerdb;DB_CLOSE_DELAY=-1</argument>
+										<argument>--spring.datasource.driverClassName=org.h2.Driver</argument>
+										<argument>--spring.datasource.username=sa</argument>
+										<argument>--spring.datasource.password=</argument>
+										<argument>--spring.jpa.hibernate.ddl-auto=create-drop</argument>
+									</arguments>
 								</configuration>
 							</execution>
 							<execution>
 								<id>post-integration-test</id>
-								<goals>
-									<goal>stop</goal>
-								</goals>
+								<goals><goal>stop</goal></goals>
 							</execution>
 						</executions>
 					</plugin>
