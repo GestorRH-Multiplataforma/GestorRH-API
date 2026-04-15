@@ -81,9 +81,9 @@ public class FichajeService {
         }
 
         List<AsignacionTurno> asignacionesHoy = asignacionRepository.findByEmpleadoIdEmpleadoAndFecha(empleado.getIdEmpleado(), hoy);
-        AsignacionTurno asignacionActual = asignacionesHoy.isEmpty() ? null : asignacionesHoy.get(0);
+        AsignacionTurno asignacionActual = asignacionesHoy.isEmpty() ? null : asignacionesHoy.getFirst();
 
-        validarGeovalladoSiEsPresencial(empleado, asignacionActual, peticion);
+        validarGeovalladoSiEsPresencial(empleado, asignacionActual, peticion.getLatitud(), peticion.getLongitud());
 
         String incidencias = evaluarRetrasoEntrada(asignacionActual, ahora, empleado);
 
@@ -123,7 +123,9 @@ public class FichajeService {
             throw new RuntimeException("No puedes fichar la salida: no tienes ninguna entrada abierta para el día de hoy.");
         }
 
-        Fichaje fichajeAbierto = abiertos.get(0);
+        Fichaje fichajeAbierto = abiertos.getFirst();
+
+        validarGeovalladoSiEsPresencial(empleado, fichajeAbierto.getAsignacion(), peticion.getLatitud(), peticion.getLongitud());
 
         fichajeAbierto.setHoraSalida(ahora);
         fichajeAbierto.setLatitudSalida(peticion.getLatitud());
@@ -234,11 +236,17 @@ public class FichajeService {
         }
     }
 
-    private void validarGeovalladoSiEsPresencial(Empleado empleado, AsignacionTurno asignacionActual, PeticionFichajeEntradaDTO peticion) {
+    private void validarGeovalladoSiEsPresencial(Empleado empleado, AsignacionTurno asignacionActual, Double latitud, Double longitud) {
         if (asignacionActual != null && asignacionActual.getModalidad() == ModalidadTurno.PRESENCIAL) {
+
+            if (latitud == null || longitud == null) {
+                log.warn("Fichaje DENEGADO (GPS Requerido): El empleado '{}' intentó fichar PRESENCIAL sin enviar coordenadas.", empleado.getEmail());
+                throw new RuntimeException("Para el turno presencial es obligatorio activar el GPS y enviar la ubicación.");
+            }
+
             Empresa empresa = empleado.getEmpresa();
             boolean gpsValido = geofencingService.esFichajeValido(
-                    peticion.getLatitud(), peticion.getLongitud(),
+                    latitud, longitud,
                     empresa.getLatitudSede(), empresa.getLongitudSede(), empresa.getRadioValidez()
             );
 
