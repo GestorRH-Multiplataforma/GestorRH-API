@@ -1,9 +1,6 @@
 package com.gestorrh.api.service;
 
-import com.gestorrh.api.dto.fichaje.PeticionFichajeEntradaDTO;
-import com.gestorrh.api.dto.fichaje.PeticionFichajeSalidaDTO;
-import com.gestorrh.api.dto.fichaje.PeticionModificacionFichajeDTO;
-import com.gestorrh.api.dto.fichaje.RespuestaFichajeDTO;
+import com.gestorrh.api.dto.fichaje.*;
 import com.gestorrh.api.entity.AsignacionTurno;
 import com.gestorrh.api.entity.Empleado;
 import com.gestorrh.api.entity.Empresa;
@@ -220,6 +217,35 @@ public class FichajeService {
         log.info("AUDITORÍA: El fichaje ID {} ha sido MODIFICADO MANUALMENTE por '{}'. Motivo: {}", idFichaje, emailAuth, peticion.getMotivoModificacion());
 
         return mapearARespuesta(fichaje);
+    }
+
+    /**
+     * Obtiene un resumen consolidado del estado de la jornada para el empleado autenticado.
+     * <p>
+     * Este método es fundamental para la experiencia de usuario en la app móvil, ya que permite
+     * determinar qué acciones (fichar entrada o salida) están disponibles al arrancar la aplicación.
+     * </p>
+     *
+     * @return {@link RespuestaEstadoFichajeDTO} con la información de fichajes y turnos del día actual.
+     */
+    @Transactional(readOnly = true)
+    public RespuestaEstadoFichajeDTO obtenerEstadoActual() {
+        Empleado empleado = obtenerEmpleadoAutenticado();
+        LocalDate hoy = LocalDate.now();
+
+        List<Fichaje> abiertos = fichajeRepository.findByEmpleadoIdEmpleadoAndFechaAndHoraSalidaIsNull(empleado.getIdEmpleado(), hoy);
+        Fichaje fichajeActivo = abiertos.isEmpty() ? null : abiertos.getFirst();
+
+        List<AsignacionTurno> asignaciones = asignacionRepository.findByEmpleadoIdEmpleadoAndFecha(empleado.getIdEmpleado(), hoy);
+        AsignacionTurno turnoHoy = asignaciones.isEmpty() ? null : asignaciones.getFirst();
+
+        return RespuestaEstadoFichajeDTO.builder()
+                .trabajandoActualmente(fichajeActivo != null)
+                .idFichajeAbierto(fichajeActivo != null ? fichajeActivo.getIdFichaje() : null)
+                .horaEntrada(fichajeActivo != null ? fichajeActivo.getHoraEntrada() : null)
+                .tieneTurnoHoy(turnoHoy != null)
+                .modalidadHoy(turnoHoy != null ? turnoHoy.getModalidad() : null)
+                .build();
     }
 
     // MÉTODOS PRIVADOS DE REFACTORIZACIÓN (CLEAN CODE)
