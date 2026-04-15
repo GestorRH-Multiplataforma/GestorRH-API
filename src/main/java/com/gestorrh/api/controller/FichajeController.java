@@ -5,10 +5,12 @@ import com.gestorrh.api.annotation.ApiErroresEscritura;
 import com.gestorrh.api.annotation.ApiErroresLectura;
 import com.gestorrh.api.dto.fichaje.PeticionFichajeEntradaDTO;
 import com.gestorrh.api.dto.fichaje.PeticionFichajeSalidaDTO;
+import com.gestorrh.api.dto.fichaje.RespuestaEstadoFichajeDTO;
 import com.gestorrh.api.dto.fichaje.RespuestaFichajeDTO;
 import com.gestorrh.api.service.FichajeService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -149,5 +151,21 @@ public class FichajeController {
 
         RespuestaFichajeDTO respuesta = fichajeService.modificarFichajeManual(idFichaje, peticion);
         return ResponseEntity.ok(respuesta);
+    }
+
+    @Operation(
+            summary = "Obtener estado actual de jornada (BFF Móvil)",
+            description = "Retorna una vista consolidada que indica si el empleado tiene turno hoy y si ya ha fichado la entrada. " +
+                    "Diseñado para optimizar la carga inicial del Dashboard en dispositivos móviles."
+    )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Estado actual recuperado correctamente"),
+            @ApiResponse(responseCode = "401", description = "No autorizado - Token JWT inválido o ausente"),
+            @ApiResponse(responseCode = "403", description = "Prohibido - Solo empleados y supervisores pueden consultar su estado móvil")
+    })
+    @PreAuthorize("hasAnyRole('EMPLEADO', 'SUPERVISOR')")
+    @GetMapping("/estado-actual")
+    public ResponseEntity<RespuestaEstadoFichajeDTO> obtenerEstadoActual() {
+        return ResponseEntity.ok(fichajeService.obtenerEstadoActual());
     }
 }
