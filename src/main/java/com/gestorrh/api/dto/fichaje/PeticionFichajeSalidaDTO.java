@@ -15,9 +15,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class PeticionFichajeSalidaDTO {
 
-    @NotNull(message = "La latitud es obligatoria para fichar la salida")
     private Double latitud;
 
-    @NotNull(message = "La longitud es obligatoria para fichar la salida")
     private Double longitud;
 }
