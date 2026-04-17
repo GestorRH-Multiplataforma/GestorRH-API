@@ -148,11 +148,41 @@ La aplicación sigue una arquitectura N-Capas estricta enfocada en Clean Code:
   * Parches críticos: `hotfix/descripcion-corta`
   * Configuración/chores: `chore/descripcion`
 * **Commits:** Conventional Commits obligatorio (`feat:`, `fix:`, `chore:`, `docs:`). Referenciar la issue al final (ej. `feat: añadir BFF móvil (#82)`).
+* **Pull Requests:** La descripción de toda PR que resuelva una issue debe incluir obligatoriamente `Closes #XX` (siendo `XX` el número de la issue) para que GitHub la cierre automáticamente al hacer merge. Ejemplo:
+  ```
+  Closes #82
+  ```
+  Si la PR resuelve varias issues: `Closes #82, Closes #83`
 * **Semantic Versioning:** La versión en `pom.xml` (`MAJOR.MINOR.PATCH`) solo se incrementa al agrupar funcionalidades en un Release Train, no por cada PR individual.
+
+### Limpieza de ramas locales
+Después de que una PR sea mergeada en `main`, eliminar inmediatamente la rama local correspondiente. Al final de cada jornada de trabajo el repositorio local solo debe contener `main` y, si procede, la rama en la que se esté trabajando actualmente:
+
+```bash
+git checkout main
+git pull origin main
+git branch -d nombre-de-la-rama
+```
+
+La rama remota en GitHub se mantiene — solo se elimina la copia local.
 
 ---
 
-## 11. Al implementar una nueva feature
+## 11. Autoría del código
+
+Todo el código, comentarios, mensajes de commit, descripciones de PR y cualquier texto generado en el contexto de este proyecto debe redactarse en primera persona y reflejar autoría propia.
+
+**Queda estrictamente prohibido** incluir cualquier referencia, mención directa o indirecta, o cualquier indicación de que el código o texto ha sido generado o asistido por herramientas externas. Esto incluye sin excepción:
+
+- Comentarios en el código fuente
+- Mensajes de commit
+- Títulos y descripciones de Pull Request
+- Documentación Javadoc
+- El propio `CLAUDE.md`
+
+---
+
+## 12. Al implementar una nueva feature
 
 1. Crear `PeticionXxxDTO` con validaciones Jakarta en `dto/<dominio>/`
 2. Crear `RespuestaXxxDTO` con `@Builder` en `dto/<dominio>/`
@@ -161,4 +191,6 @@ La aplicación sigue una arquitectura N-Capas estricta enfocada en Clean Code:
 5. Extraer siempre la identidad del usuario desde `SecurityContext`, nunca de parámetros
 6. Escribir tests en `test/java/com/gestorrh/api/service/`
 7. Verificar con `./mvnw test` antes de abrir el PR
-8. Rama: `feature/P0-XX-descripcion` — commit con Conventional Commits referenciando la issue
+8. Rama: `feature/PX-XX-descripcion` — commit con Conventional Commits referenciando la issue
+9. La descripción de la PR debe incluir `Closes #XX`
+10. Tras el merge de la PR: ejecutar limpieza de rama local (ver sección 10)
