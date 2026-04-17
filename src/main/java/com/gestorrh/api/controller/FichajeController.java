@@ -9,6 +9,7 @@ import com.gestorrh.api.dto.fichaje.RespuestaEstadoFichajeDTO;
 import com.gestorrh.api.dto.fichaje.RespuestaFichajeDTO;
 import com.gestorrh.api.service.FichajeService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -96,13 +97,15 @@ public class FichajeController {
      * Permite consultar el historial de fichajes realizados en un rango de fechas determinado.
      * <p>
      * Puede ser filtrado opcionalmente por un empleado específico si el usuario tiene permisos.
+     * Los parámetros de fecha son opcionales: si se omiten, el servidor aplica un rango por defecto
+     * (inicio de mes actual hasta hoy).
      * </p>
      * <p>
      * URL de acceso: {@code GET http://localhost:8080/api/fichajes?fechaInicio=2026-03-01&fechaFin=2026-03-31}
      * </p>
      *
-     * @param fechaInicio Fecha de inicio para el rango de búsqueda.
-     * @param fechaFin Fecha de fin para el rango de búsqueda.
+     * @param fechaInicio Fecha de inicio para el rango de búsqueda (opcional, por defecto: día 1 del mes actual).
+     * @param fechaFin Fecha de fin para el rango de búsqueda (opcional, por defecto: hoy).
      * @param empleadoId Identificador opcional del empleado a consultar.
      * @return ResponseEntity con la lista de {@link RespuestaFichajeDTO} encontrados y estado HTTP 200 (OK).
      */
@@ -111,13 +114,17 @@ public class FichajeController {
     @Operation(
             summary = "Consultar historial de fichajes",
             description = "Requiere Token de EMPRESA, SUPERVISOR o EMPLEADO. Filtra fichajes por fechas. " +
+                    "Los parámetros 'fechaInicio' y 'fechaFin' son opcionales: si se omite 'fechaInicio', " +
+                    "se usa el día 1 del mes actual; si se omite 'fechaFin', se usa la fecha de hoy. " +
                     "Los EMPLEADOS solo ven los suyos; SUPERVISOR/EMPRESA pueden usar el parámetro opcional 'empleadoId' " +
                     "para ver el historial de un trabajador específico."
     )
     @ApiErroresLectura
     public ResponseEntity<List<RespuestaFichajeDTO>> consultarFichajes(
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaInicio,
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaFin,
+            @Parameter(description = "Fecha de inicio del rango (formato ISO: yyyy-MM-dd). Si se omite, se usa el día 1 del mes actual.", required = false)
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaInicio,
+            @Parameter(description = "Fecha de fin del rango (formato ISO: yyyy-MM-dd). Si se omite, se usa la fecha de hoy.", required = false)
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaFin,
             @RequestParam(required = false) Long empleadoId) {
 
         List<RespuestaFichajeDTO> historial = fichajeService.consultarFichajes(fechaInicio, fechaFin, empleadoId);
