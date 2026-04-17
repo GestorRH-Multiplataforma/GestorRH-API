@@ -144,13 +144,16 @@ public class FichajeService {
      * - EMPLEADO: Ve únicamente sus propios registros.
      * </p>
      *
-     * @param fechaInicio Fecha de inicio de la búsqueda.
-     * @param fechaFin Fecha de fin de la búsqueda.
+     * @param fechaInicio Fecha de inicio de la búsqueda (si es null, se usa el día 1 del mes actual).
+     * @param fechaFin Fecha de fin de la búsqueda (si es null, se usa la fecha de hoy).
      * @param empleadoIdFiltro Identificador opcional para filtrar por un empleado concreto.
      * @return List de {@link RespuestaFichajeDTO} con los registros localizados.
      */
     @Transactional(readOnly = true)
     public List<RespuestaFichajeDTO> consultarFichajes(LocalDate fechaInicio, LocalDate fechaFin, Long empleadoIdFiltro) {
+        if (fechaInicio == null) fechaInicio = LocalDate.now().withDayOfMonth(1);
+        if (fechaFin == null) fechaFin = LocalDate.now();
+
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         String emailAuth = auth.getName();
         boolean esEmpresa = auth.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_EMPRESA"));

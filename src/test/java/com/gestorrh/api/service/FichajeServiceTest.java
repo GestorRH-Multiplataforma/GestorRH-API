@@ -381,9 +381,69 @@ class FichajeServiceTest {
             mockAuth("empleado@test.com", "ROLE_EMPLEADO");
             when(empleadoRepository.findByEmail("empleado@test.com")).thenReturn(Optional.empty());
 
-            assertThrows(EntityNotFoundException.class, () -> 
+            assertThrows(EntityNotFoundException.class, () ->
                 fichajeService.consultarFichajes(LocalDate.now(), LocalDate.now(), null)
             );
+        }
+
+        @Test
+        @DisplayName("Params opcionales: sin fechas devuelve fichajes del mes actual")
+        void consultarFichajes_SinFechas_UsaMesActual() {
+            mockAuth("empleado@test.com", "ROLE_EMPLEADO");
+            LocalDate primerDiaMes = LocalDate.now().withDayOfMonth(1);
+            LocalDate hoy = LocalDate.now();
+
+            Fichaje f1 = Fichaje.builder().idFichaje(1L).empleado(empleadoPrueba).fecha(hoy).build();
+            when(empleadoRepository.findByEmail("empleado@test.com")).thenReturn(Optional.of(empleadoPrueba));
+            when(fichajeRepository.findByEmpleadoIdEmpleadoAndFechaBetween(
+                    eq(empleadoPrueba.getIdEmpleado()), eq(primerDiaMes), eq(hoy)))
+                .thenReturn(List.of(f1));
+
+            List<RespuestaFichajeDTO> resultado = fichajeService.consultarFichajes(null, null, null);
+
+            assertEquals(1, resultado.size());
+            verify(fichajeRepository).findByEmpleadoIdEmpleadoAndFechaBetween(
+                    empleadoPrueba.getIdEmpleado(), primerDiaMes, hoy);
+        }
+
+        @Test
+        @DisplayName("Params opcionales: solo fechaInicio, fechaFin defaults a hoy")
+        void consultarFichajes_SoloFechaInicio_FechaFinDefaultsAHoy() {
+            mockAuth("empleado@test.com", "ROLE_EMPLEADO");
+            LocalDate fechaInicio = LocalDate.of(2026, 1, 1);
+            LocalDate hoy = LocalDate.now();
+
+            Fichaje f1 = Fichaje.builder().idFichaje(1L).empleado(empleadoPrueba).fecha(fechaInicio).build();
+            when(empleadoRepository.findByEmail("empleado@test.com")).thenReturn(Optional.of(empleadoPrueba));
+            when(fichajeRepository.findByEmpleadoIdEmpleadoAndFechaBetween(
+                    eq(empleadoPrueba.getIdEmpleado()), eq(fechaInicio), eq(hoy)))
+                .thenReturn(List.of(f1));
+
+            List<RespuestaFichajeDTO> resultado = fichajeService.consultarFichajes(fechaInicio, null, null);
+
+            assertEquals(1, resultado.size());
+            verify(fichajeRepository).findByEmpleadoIdEmpleadoAndFechaBetween(
+                    empleadoPrueba.getIdEmpleado(), fechaInicio, hoy);
+        }
+
+        @Test
+        @DisplayName("Params opcionales: ambas fechas explícitas, sin cambio de comportamiento")
+        void consultarFichajes_AmbasFechas_ComportamientoSinCambios() {
+            mockAuth("empleado@test.com", "ROLE_EMPLEADO");
+            LocalDate inicio = LocalDate.of(2026, 1, 1);
+            LocalDate fin = LocalDate.of(2026, 1, 31);
+
+            Fichaje f1 = Fichaje.builder().idFichaje(1L).empleado(empleadoPrueba).fecha(inicio).build();
+            when(empleadoRepository.findByEmail("empleado@test.com")).thenReturn(Optional.of(empleadoPrueba));
+            when(fichajeRepository.findByEmpleadoIdEmpleadoAndFechaBetween(
+                    eq(empleadoPrueba.getIdEmpleado()), eq(inicio), eq(fin)))
+                .thenReturn(List.of(f1));
+
+            List<RespuestaFichajeDTO> resultado = fichajeService.consultarFichajes(inicio, fin, null);
+
+            assertEquals(1, resultado.size());
+            verify(fichajeRepository).findByEmpleadoIdEmpleadoAndFechaBetween(
+                    empleadoPrueba.getIdEmpleado(), inicio, fin);
         }
     }
 
