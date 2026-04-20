@@ -317,6 +317,8 @@ public class AsignacionTurnoService {
                 .nombreCompletoEmpleado(asig.getEmpleado().getNombre() + " " + asig.getEmpleado().getApellidos())
                 .idTurno(asig.getTurno().getIdTurno())
                 .descripcionTurno(asig.getTurno().getDescripcion())
+                .horaInicio(asig.getTurno().getHoraInicio())
+                .horaFin(asig.getTurno().getHoraFin())
                 .fecha(asig.getFecha())
                 .modalidad(asig.getModalidad())
                 .motivoCambio(asig.getMotivoCambio())
