@@ -21,6 +21,8 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.core.io.Resource;
+import org.springframework.mock.web.MockMultipartFile;
 
 import java.time.LocalDate;
 import java.util.Collections;
@@ -161,5 +163,63 @@ class AusenciaServiceTest {
         RuntimeException ex = assertThrows(RuntimeException.class, () -> ausenciaService.revisarAusencia(1L, peticion));
         assertTrue(ex.getMessage().contains("Debes proporcionar observaciones"));
         verify(ausenciaRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("Crear ausencia sin archivo deja el campo justificante a null en el DTO")
+    void crearAusencia_SinArchivo_JustificanteNull() {
+        simularAutenticacion(EMAIL_EMPLEADO, "ROLE_EMPLEADO");
+        when(empleadoRepository.findByEmail(EMAIL_EMPLEADO)).thenReturn(Optional.of(empleadoLogueado));
+        when(ausenciaRepository.findAusenciasSolapadas(eq(10L), anyList(), any(), any())).thenReturn(List.of());
+        when(ausenciaRepository.save(any(Ausencia.class))).thenAnswer(i -> i.getArgument(0));
+
+        PeticionAusenciaDTO peticion = PeticionAusenciaDTO.builder()
+                .tipo(TipoAusencia.VACACIONES)
+                .fechaInicio(LocalDate.of(2026, 11, 1))
+                .fechaFin(LocalDate.of(2026, 11, 5))
+                .build();
+
+        RespuestaAusenciaDTO respuesta = ausenciaService.crearAusencia(peticion, null);
+
+        assertNull(respuesta.getJustificante());
+        verify(fileStorageService, never()).guardarArchivo(any());
+    }
+
+    @Test
+    @DisplayName("El campo justificante del DTO contiene el nombre simple devuelto por FileStorageService y es usable para descargar")
+    void crearAusencia_ConArchivo_JustificanteEsNombreSimpleUsableParaDescarga() {
+        simularAutenticacion(EMAIL_EMPLEADO, "ROLE_EMPLEADO");
+        when(empleadoRepository.findByEmail(EMAIL_EMPLEADO)).thenReturn(Optional.of(empleadoLogueado));
+        when(ausenciaRepository.findAusenciasSolapadas(eq(10L), anyList(), any(), any())).thenReturn(List.of());
+        when(ausenciaRepository.save(any(Ausencia.class))).thenAnswer(i -> i.getArgument(0));
+
+        String nombreSimpleGenerado = "a3f5c0e2-9b1d-4f7c-8e6a-2d1b0c4f5a6b.pdf";
+        when(fileStorageService.guardarArchivo(any())).thenReturn(nombreSimpleGenerado);
+
+        MockMultipartFile archivo = new MockMultipartFile(
+                "archivo", "justificante_original.pdf", "application/pdf", "contenido".getBytes()
+        );
+
+        PeticionAusenciaDTO peticion = PeticionAusenciaDTO.builder()
+                .tipo(TipoAusencia.MEDICA)
+                .fechaInicio(LocalDate.of(2026, 11, 1))
+                .fechaFin(LocalDate.of(2026, 11, 1))
+                .build();
+
+        RespuestaAusenciaDTO respuesta = ausenciaService.crearAusencia(peticion, archivo);
+
+        assertEquals(nombreSimpleGenerado, respuesta.getJustificante(),
+                "El DTO debe exponer el nombre simple del archivo, sin rutas ni prefijos.");
+        assertFalse(respuesta.getJustificante().contains("/"),
+                "El justificante no debe contener separadores de ruta.");
+        assertFalse(respuesta.getJustificante().contains("\\"),
+                "El justificante no debe contener separadores de ruta.");
+
+        Resource recursoSimulado = mock(Resource.class);
+        when(fileStorageService.cargarArchivoComoRecurso(respuesta.getJustificante())).thenReturn(recursoSimulado);
+
+        Resource descargado = fileStorageService.cargarArchivoComoRecurso(respuesta.getJustificante());
+        assertNotNull(descargado, "El valor del campo justificante debe ser usable directamente para descargar el archivo.");
+        verify(fileStorageService).cargarArchivoComoRecurso(nombreSimpleGenerado);
     }
 }
