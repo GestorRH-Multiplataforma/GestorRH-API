@@ -1,13 +1,22 @@
-# GestorRH 2.0 - API REST
-
+# GestorRH - API REST
+ 
+[![CI Pipeline](https://github.com/GestorRH-Multiplataforma/GestorRH-API/actions/workflows/ci.yml/badge.svg)](https://github.com/GestorRH-Multiplataforma/GestorRH-API/actions/workflows/ci.yml)
+[![Version](https://img.shields.io/badge/version-v1.0.1--stable-brightgreen)](https://github.com/GestorRH-Multiplataforma/GestorRH-API/releases/tag/v1.0.1)
+[![Java](https://img.shields.io/badge/Java-21-orange?logo=openjdk)](https://openjdk.org/projects/jdk/21/)
+[![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3-6DB33F?logo=springboot&logoColor=white)](https://spring.io/projects/spring-boot)
+[![License](https://img.shields.io/badge/license-Apache%202.0-blue)](LICENSE)
+ 
 API REST desarrollada en Spring Boot para la gestión centralizada de recursos humanos, control de turnos, ausencias y validación de fichaje móvil con geovallado.
-
-**Portal de Documentación (API REST & Código):** [Acceder al portal interactivo](https://gestorrh-multiplataforma.github.io/GestorRH-API/) 
+ 
+> Este repositorio forma parte del ecosistema **GestorRH Multiplataforma**. Para entender el contexto general del proyecto (clientes móvil, web y arquitectura global), consulta el [README de la organización](https://github.com/GestorRH-Multiplataforma#gestorrh---ecosistema-multiplataforma).
+ 
+**Portal de Documentación (API REST & Código):** [Acceder al portal interactivo](https://gestorrh-multiplataforma.github.io/GestorRH-API/)
 *(Desplegado automáticamente mediante pipeline CI/CD en GitHub Pages. Incluye Swagger UI y Javadoc).*
-
+ 
 ---
-
+ 
 ## Tecnologías Utilizadas
+ 
 - **Java 21** & **Spring Boot 3**
 - **Spring Security & JWT** (Autenticación Stateless)
 - **Spring Data JPA / Hibernate**
@@ -15,99 +24,174 @@ API REST desarrollada en Spring Boot para la gestión centralizada de recursos h
 - **Swagger / OpenAPI** (Documentación interactiva de endpoints)
 - **Maven** & **GitHub Actions** (CI/CD)
 - **Docker** & **Docker Compose**
-
+- **OpenPDF** (Generación de reportes en PDF)
 ---
-
+ 
 ## Requisitos Previos
-
+ 
 Dependiendo de si quieres desarrollar o simplemente desplegar la aplicación, los requisitos varían:
-
+ 
 **Para Despliegue Completo (Recomendado):**
 - **Docker** y **Docker Compose** instalados. (No necesitas instalar Java ni Maven, la imagen se construye y ejecuta de forma autónoma).
-
 **Para Desarrollo Local:**
 - **Java 21** instalado en el sistema.
 - **Maven** para la gestión de dependencias y compilación.
 - **Docker** (solo para levantar el contenedor local de PostgreSQL).
-
 ---
-
+ 
+## Estructura del Proyecto
+ 
+```
+src/main/java/com/gestorrh/api/
+├── annotation/        # Anotaciones personalizadas para Swagger (respuestas de error reutilizables)
+├── config/            # Configuración de seguridad, Swagger/OpenAPI y DataSeeder (datos de prueba)
+├── controller/        # Controladores REST: Autenticación, Empresa, Empleado, Turno,
+│                      #   Asignación, Fichaje, Ausencia, Estadísticas y Reportes
+├── dto/               # Objetos de transferencia de datos, organizados por módulo
+│   ├── asignacion/
+│   ├── ausencia/
+│   ├── autenticacion/
+│   ├── empleado/
+│   ├── empresa/
+│   ├── error/
+│   ├── estadisticas/
+│   ├── fichaje/
+│   ├── reporte/
+│   └── turno/
+├── entity/            # Entidades JPA: Empresa, Empleado, Turno, AsignacionTurno, Fichaje, Ausencia
+│   └── enums/         # Enumeraciones de dominio (RolEmpleado, EstadoAusencia, ModalidadTurno, etc.)
+├── exception/         # Gestor global de excepciones (@RestControllerAdvice)
+├── repository/        # Repositorios Spring Data JPA con consultas JPQL personalizadas
+├── security/          # Filtro JWT (FiltroJwt) y servicio de generación/validación de tokens (ServicioJwt)
+└── service/           # Lógica de negocio: servicios de dominio + infraestructura
+                       #   (GeofencingService, FileStorageService, ReportePdfService, TareaProgramadaService)
+```
+ 
+---
+ 
+## Variables de Entorno
+ 
+El despliegue en producción requiere un archivo `.env` en la raíz del proyecto (basado en `.env.example`).
+ 
+| Variable | Descripción | Ejemplo |
+|---|---|---|
+| `DB_USERNAME` | Usuario de la base de datos PostgreSQL | `gestor_user` |
+| `DB_PASSWORD` | Contraseña de la base de datos PostgreSQL | `contraseña_segura` |
+| `JWT_SECRET` | Clave secreta para firmar los tokens JWT (64 caracteres hexadecimales) | `a1b2c3d4...` |
+ 
+> **Nota de seguridad:** El archivo `.env` nunca debe subirse al repositorio. Está incluido en `.gitignore`.
+ 
+---
+ 
 ## Entorno de Desarrollo (Local)
-
+ 
 El proyecto utiliza perfiles de Spring (`dev`, `test`, `prod`) para separar la configuración. Por defecto, arranca en el perfil `dev`.
-
+ 
 ### 1. Levantar la Base de Datos
 Para no instalar PostgreSQL en tu máquina, utilizamos un contenedor Docker. Abre una terminal en la raíz del proyecto y ejecuta:
 ```bash
 docker compose up -d
 ```
-
+ 
 ### 2. Arrancar la Aplicación
 Una vez que el contenedor de la base de datos esté corriendo, puedes compilar y ejecutar la API con Maven:
 ```bash
 mvn spring-boot:run
 ```
 La API estará disponible en la ruta base: `http://localhost:8080/api`
-
+ 
+### 3. Datos de Prueba (DataSeeder)
+Al arrancar en perfil `dev` con la base de datos vacía, el sistema inyecta automáticamente un ecosistema de pruebas completo con empresa, empleados, turnos, fichajes y ausencias. Las credenciales son:
+ 
+| Rol | Email | Contraseña | Endpoint de login |
+|---|---|---|---|
+| EMPRESA | `admin@tech.com` | `123456` | `/auth/login-empresa` |
+| SUPERVISOR | `super@tech.com` | `123456` | `/auth/login-empleado` |
+| EMPLEADO | `empleado@tech.com` | `123456` | `/auth/login-empleado` |
+ 
 ---
-
+ 
 ## Entorno de Producción (Despliegue con Docker)
-
+ 
 El proyecto está preparado para desplegarse en cualquier servidor (agnóstico a la nube) utilizando un enfoque *Multi-stage* con Docker.
-
+ 
 ### 1. Configurar Variables de Entorno
-Copia el archivo de plantilla `.env.example` en la raíz del proyecto y renómbralo a `.env`. Rellena las variables obligatorias con tus credenciales de producción (Usuario BD, Contraseña BD y Secreto JWT).
-
+Copia el archivo de plantilla `.env.example` en la raíz del proyecto y renómbralo a `.env`. Rellena las variables obligatorias con tus credenciales de producción (ver tabla de [Variables de Entorno](#variables-de-entorno)).
+ 
 ### 2. Levantar la Infraestructura Completa
 La API y su base de datos aislada se construyen y orquestan automáticamente con Docker Compose. Ejecuta:
 ```bash
 docker compose -f docker-compose.prod.yml up -d --build
 ```
-
+ 
 ---
-
-# Documentación y Pruebas (Swagger UI)
-
+ 
+## Tests
+ 
+El proyecto cuenta con una suite de tests unitarios implementados con **JUnit 5** y **Mockito**, cubriendo la capa de servicios completa.
+ 
+Los módulos con cobertura de tests son: `AutenticacionService`, `EmpresaService`, `EmpleadoService`, `TurnoService`, `AsignacionTurnoService`, `AusenciaService`, `FichajeService`, `EstadisticasService`, `ReporteService`, `ReportePdfService`, `FileStorageService` y `GeofencingService`.
+ 
+Para ejecutar los tests:
+```bash
+mvn test
+```
+ 
+Los tests utilizan el perfil `test` de Spring, que arranca el contexto de la aplicación con una configuración aislada sin necesidad de base de datos real.
+ 
+---
+ 
+## CI/CD
+ 
+El proyecto dispone de un pipeline de integración continua definido en `.github/workflows/ci.yml` que se ejecuta automáticamente en cada push a `main` o `feature/**` y en cada Pull Request a `main`.
+ 
+El pipeline realiza las siguientes etapas en orden:
+ 
+1. **Build & Test**: Compila el proyecto y ejecuta la suite de tests con `mvn clean test` bajo el perfil `test`.
+2. **Generación de documentación** *(solo en `main`)*: Genera el Javadoc y el fichero `openapi.json` a partir del perfil Maven `api-docs`.
+3. **Construcción del portal** *(solo en `main`)*: Ensambla Swagger UI y Javadoc en un sitio estático unificado.
+4. **Despliegue en GitHub Pages** *(solo en `main`)*: Publica el portal en [gestorrh-multiplataforma.github.io/GestorRH-API/](https://gestorrh-multiplataforma.github.io/GestorRH-API/).
+---
+ 
+## Documentación y Pruebas (Swagger UI)
+ 
 Una vez que la aplicación esté corriendo (ya sea en tu entorno local con Maven o contenedorizada con Docker), puedes probar todos los endpoints, autenticarte y ver los esquemas de datos interactivos accediendo a:
-
+ 
 `http://localhost:8080/swagger-ui/index.html`
-
-*(Nota: Recuerda que para probar los endpoints protegidos, primero debes usar el endpoint de Login y pegar el token JWT resultante en el botón "Authorize").*
-
+ 
+*(Nota: Para probar los endpoints protegidos, primero debes usar el endpoint de Login y pegar el token JWT resultante en el botón "Authorize").*
+ 
 ---
-
+ 
 ## Versionado
-
+ 
 Este proyecto utiliza **Git tags anotados** para marcar hitos funcionales y versiones relevantes de la API REST.
-
+ 
 La estrategia de versionado sigue **Semantic Versioning** (`MAJOR.MINOR.PATCH`):
-
+ 
 - **MAJOR**: cambios incompatibles con clientes existentes.
 - **MINOR**: nuevas funcionalidades compatibles.
 - **PATCH**: correcciones compatibles sin ruptura del contrato de la API.
-
 ### Hitos publicados
-
-- **`v0.1.0`** → primera versión funcional del backend.  
+ 
+- **`v0.1.0`** → primera versión funcional del backend.
   Incluye autenticación, autorización, gestión básica de empleados y una primera base de calidad.
-
-- **`v0.8.0`** → backlog funcional principal completado.  
+- **`v0.8.0`** → backlog funcional principal completado.
   Se consideran implementadas las funcionalidades principales de negocio de la API: seguridad, empresa, empleados, turnos, asignaciones, ausencias y fichajes.
-
-- **`v0.9.0`** → infraestructura, documentación y estabilización.  
+- **`v0.9.0`** → infraestructura, documentación y estabilización.
   Incluye la contenedorización agnóstica con Docker, variables de entorno, control de concurrencia optimista y datos de prueba automatizados (DataSeeder).
-
-- **`v1.0.0`** → primera versión estable.  
+- **`v1.0.0`** → primera versión estable.
   Versión de referencia para integración con clientes y futuros despliegues, con la arquitectura base consolidada, preparación para producción y licencia aplicada.
-
+- **`v1.0.1`** → versión estable actual. *(latest)*
+  Parche sobre v1.0.0 con correcciones compatibles sin ruptura del contrato de la API.
 ### Criterio de uso
-
+ 
 Para integración con clientes y despliegue, la referencia será siempre la **última versión estable aprobada**, no necesariamente el último commit de la rama `main`.
-
+ 
 ---
-
+ 
 ## Licencia
-
+ 
 Este proyecto está bajo la Licencia Apache 2.0 - mira el archivo [LICENSE](LICENSE) para más detalles.
-
+ 
 *Eres libre de utilizar, modificar y distribuir este software, siempre y cuando se incluya una copia de la licencia y se respeten los términos de la misma.*
