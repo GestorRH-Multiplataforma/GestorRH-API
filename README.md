@@ -185,7 +185,7 @@ La estrategia de versionado sigue **Semantic Versioning** (`MAJOR.MINOR.PATCH`):
 - **`v1.0.1`** → versión estable actual. *(latest)*
   Parche sobre v1.0.0 con correcciones compatibles sin ruptura del contrato de la API.
 - **`v1.1.0`** → nuevas funcionalidades y pipeline CD. *(latest)*
-    Reset de contraseña por RRHH, filtros en fichajes, BFF dashboard móvil y despliegue automático en Oracle Cloud ARM64.
+    Reset de contraseña por RRHH, filtros en fichajes, BFF dashboard móvil y despliegue automático en Oracle Cloud.
 ### Criterio de uso
  
 Para integración con clientes y despliegue, la referencia será siempre la **última versión estable aprobada**, no necesariamente el último commit de la rama `main`.
