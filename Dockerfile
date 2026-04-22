@@ -14,7 +14,7 @@ RUN mvn clean package -DskipTests
 FROM eclipse-temurin:21-jre-alpine
 WORKDIR /app
 
-COPY --from=builder /app/target/api-1.1.0.jar app.jar
+COPY --from=builder /app/target/api-1.1.1.jar app.jar
 
 RUN mkdir -p uploads/ausencias
 
