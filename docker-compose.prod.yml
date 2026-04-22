@@ -8,10 +8,16 @@ services:
       POSTGRES_PASSWORD: ${DB_PASSWORD}
     volumes:
       - gestorrh_pgdata_prod:/var/lib/postgresql/data
+    networks:
+      - gestorrh-net
+    deploy:
+      resources:
+        limits:
+          memory: 512m
     restart: unless-stopped
 
   api:
-    build: .
+    image: ghcr.io/gestorrh-multiplataforma/gestorrh-api:latest
     container_name: gestorrh-api-prod
     ports:
       - "8080:8080"
@@ -23,9 +29,19 @@ services:
       - DB_DDL_AUTO=update
     volumes:
       - api_uploads:/app/uploads
+    networks:
+      - gestorrh-net
+    deploy:
+      resources:
+        limits:
+          memory: 1024m
     depends_on:
       - postgres
     restart: unless-stopped
+
+networks:
+  gestorrh-net:
+    driver: bridge
 
 volumes:
   gestorrh_pgdata_prod:
