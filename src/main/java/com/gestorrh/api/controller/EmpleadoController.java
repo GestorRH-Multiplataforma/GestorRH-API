@@ -187,6 +187,38 @@ public class EmpleadoController {
     }
 
     /**
+     * Restablece la contraseña de un empleado cuando este la ha olvidado.
+     * <p>
+     * Únicamente accesible para usuarios con el rol de 'EMPRESA'. La política interna prohíbe la
+     * auto-recuperación por correo, por lo que esta operación administrativa centraliza el reseteo
+     * en el personal de RRHH. No se exige la contraseña anterior: se sustituye por la nueva,
+     * que se almacena cifrada con BCrypt y nunca se expone en la respuesta.
+     * </p>
+     * <p>
+     * URL de acceso: {@code PUT http://localhost:8080/api/empleados/{id}/reset-password}
+     * </p>
+     *
+     * @param id Identificador del empleado cuya contraseña se va a restablecer.
+     * @param peticion DTO con la nueva contraseña (mínimo 8 caracteres).
+     * @return ResponseEntity con el {@link RespuestaEmpleadoDTO} actualizado y estado 200 (OK).
+     */
+    @PutMapping("/{id}/reset-password")
+    @PreAuthorize("hasRole('EMPRESA')")
+    @Operation(
+            summary = "Restablecer contraseña de empleado (RRHH)",
+            description = "Requiere Token de EMPRESA. Permite al personal de RRHH establecer una nueva " +
+                    "contraseña para un empleado que la ha olvidado. La contraseña nunca se devuelve en la respuesta."
+    )
+    @ApiErroresEscritura
+    public ResponseEntity<RespuestaEmpleadoDTO> resetPasswordEmpleado(
+            @PathVariable("id") Long id,
+            @Valid @RequestBody PeticionResetPasswordDTO peticion) {
+
+        RespuestaEmpleadoDTO respuesta = empleadoService.resetPassword(id, peticion.getNuevaPassword());
+        return ResponseEntity.ok(respuesta);
+    }
+
+    /**
      * Permite al empleado autenticado consultar su propia información de perfil.
      * <p>
      * Únicamente accesible para usuarios con el rol de 'EMPLEADO'.

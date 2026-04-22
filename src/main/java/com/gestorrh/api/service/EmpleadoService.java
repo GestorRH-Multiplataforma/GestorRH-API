@@ -326,4 +326,56 @@ public class EmpleadoService {
         empleadoRepository.save(empleado);
         log.info("El empleado '{}' ha cambiado su contraseña con éxito.", correoEmpleadoAuth);
     }
+
+    /**
+     * Restablece la contraseña de un empleado por decisión administrativa de RRHH.
+     * <p>
+     * A diferencia del cambio de contraseña personal, esta operación no exige la contraseña previa:
+     * está pensada para escenarios de olvido, ya que la política de la empresa prohíbe la auto-recuperación
+     * por correo. Se mantiene el aislamiento multi-tenant: la empresa autenticada solo puede restablecer
+     * contraseñas de empleados que le pertenezcan.
+     * </p>
+     *
+     * @param idEmpleado Identificador del empleado cuya contraseña se va a restablecer.
+     * @param nuevaPassword Nueva contraseña en texto plano, que se almacenará cifrada con BCrypt.
+     * @return {@link RespuestaEmpleadoDTO} con los datos del empleado actualizado (sin exponer la contraseña).
+     * @throws EntityNotFoundException Si el empleado no existe en el sistema.
+     * @throws RuntimeException Si el empleado pertenece a otra empresa distinta de la autenticada.
+     */
+    @Transactional
+    public RespuestaEmpleadoDTO resetPassword(Long idEmpleado, String nuevaPassword) {
+
+        String correoEmpresaAuth = SecurityContextHolder.getContext().getAuthentication().getName();
+        Empresa empresaLogueada = empresaRepository.findByEmail(correoEmpresaAuth)
+                .orElseThrow(() -> new EntityNotFoundException("Empresa no encontrada"));
+
+        Empleado empleado = empleadoRepository.findById(idEmpleado)
+                .orElseThrow(() -> new EntityNotFoundException("Empleado no encontrado con ID: " + idEmpleado));
+
+        if (!empleado.getEmpresa().getIdEmpresa().equals(empresaLogueada.getIdEmpresa())) {
+            log.warn("VIOLACIÓN DE SEGURIDAD: La empresa '{}' intentó restablecer la contraseña del empleado ID {}, que pertenece a otra empresa.", correoEmpresaAuth, idEmpleado);
+            throw new RuntimeException("Acceso denegado: Este empleado no pertenece a tu empresa.");
+        }
+
+        empleado.setPassword(codificadorPassword.encode(nuevaPassword));
+        empleado = empleadoRepository.save(empleado);
+
+        log.info("La empresa '{}' ha RESTABLECIDO la contraseña del empleado ID {} ({})", correoEmpresaAuth, idEmpleado, empleado.getEmail());
+
+        boolean esRealmenteActivo = empleado.getActivo() &&
+                (empleado.getFechaBajaContrato() == null || empleado.getFechaBajaContrato().isAfter(LocalDate.now()));
+
+        return RespuestaEmpleadoDTO.builder()
+                .idEmpleado(empleado.getIdEmpleado())
+                .email(empleado.getEmail())
+                .nombre(empleado.getNombre())
+                .apellidos(empleado.getApellidos())
+                .telefono(empleado.getTelefono())
+                .puesto(empleado.getPuesto())
+                .departamento(empleado.getDepartamento())
+                .rol(empleado.getRol())
+                .activo(esRealmenteActivo)
+                .fechaBajaContrato(empleado.getFechaBajaContrato())
+                .build();
+    }
 }
