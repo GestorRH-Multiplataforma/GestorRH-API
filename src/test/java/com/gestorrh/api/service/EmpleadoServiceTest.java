@@ -4,6 +4,7 @@ import com.gestorrh.api.dto.empleado.PeticionActualizarEmpleadoDTO;
 import com.gestorrh.api.dto.empleado.PeticionCrearEmpleadoDTO;
 import com.gestorrh.api.dto.empleado.RespuestaCrearEmpleadoDTO;
 import com.gestorrh.api.dto.empleado.RespuestaEmpleadoDTO;
+import jakarta.persistence.EntityNotFoundException;
 import com.gestorrh.api.entity.Empleado;
 import com.gestorrh.api.entity.Empresa;
 import com.gestorrh.api.entity.enums.RolEmpleado;
@@ -181,6 +182,76 @@ class EmpleadoServiceTest {
         });
 
         assertTrue(exception.getMessage().contains("Acceso denegado: Este empleado no pertenece a tu empresa"));
+        verify(empleadoRepository, never()).save(any(Empleado.class));
+    }
+
+    @Test
+    @DisplayName("Debe restablecer la contraseña de un empleado cifrándola y sin exponerla en la respuesta")
+    void resetPassword_Exito() {
+        Long idEmpleadoTarget = 20L;
+        String nuevaPassword = "NuevaPassword123";
+
+        Empleado empleadoEnBd = Empleado.builder()
+                .idEmpleado(idEmpleadoTarget)
+                .empresa(empresaPrueba)
+                .email("empleado@test.com")
+                .nombre("Carlos")
+                .password("hashAntiguo")
+                .activo(true)
+                .rol(RolEmpleado.EMPLEADO)
+                .build();
+
+        when(empresaRepository.findByEmail(EMAIL_EMPRESA_AUTH)).thenReturn(Optional.of(empresaPrueba));
+        when(empleadoRepository.findById(idEmpleadoTarget)).thenReturn(Optional.of(empleadoEnBd));
+        when(codificadorPassword.encode(nuevaPassword)).thenReturn("hashNuevo");
+        when(empleadoRepository.save(any(Empleado.class))).thenAnswer(i -> i.getArgument(0));
+
+        RespuestaEmpleadoDTO respuesta = empleadoService.resetPassword(idEmpleadoTarget, nuevaPassword);
+
+        assertNotNull(respuesta);
+        assertEquals(idEmpleadoTarget, respuesta.getIdEmpleado());
+        assertEquals("empleado@test.com", respuesta.getEmail());
+        assertEquals("hashNuevo", empleadoEnBd.getPassword());
+        verify(codificadorPassword, times(1)).encode(nuevaPassword);
+        verify(empleadoRepository, times(1)).save(empleadoEnBd);
+    }
+
+    @Test
+    @DisplayName("Debe lanzar EntityNotFoundException si el empleado a restablecer no existe")
+    void resetPassword_EmpleadoNoExiste_LanzaExcepcion() {
+        Long idInexistente = 999L;
+
+        when(empresaRepository.findByEmail(EMAIL_EMPRESA_AUTH)).thenReturn(Optional.of(empresaPrueba));
+        when(empleadoRepository.findById(idInexistente)).thenReturn(Optional.empty());
+
+        assertThrows(EntityNotFoundException.class,
+                () -> empleadoService.resetPassword(idInexistente, "Password123"));
+
+        verify(codificadorPassword, never()).encode(anyString());
+        verify(empleadoRepository, never()).save(any(Empleado.class));
+    }
+
+    @Test
+    @DisplayName("Debe denegar el reseteo si el empleado pertenece a OTRA empresa (Aislamiento Multi-tenant)")
+    void resetPassword_OtraEmpresa_LanzaExcepcion() {
+        Long idEmpleadoTarget = 77L;
+
+        Empresa otraEmpresa = new Empresa();
+        otraEmpresa.setIdEmpresa(2L);
+
+        Empleado empleadoDeOtraEmpresa = Empleado.builder()
+                .idEmpleado(idEmpleadoTarget)
+                .empresa(otraEmpresa)
+                .build();
+
+        when(empresaRepository.findByEmail(EMAIL_EMPRESA_AUTH)).thenReturn(Optional.of(empresaPrueba));
+        when(empleadoRepository.findById(idEmpleadoTarget)).thenReturn(Optional.of(empleadoDeOtraEmpresa));
+
+        RuntimeException exception = assertThrows(RuntimeException.class,
+                () -> empleadoService.resetPassword(idEmpleadoTarget, "Password123"));
+
+        assertTrue(exception.getMessage().contains("Acceso denegado"));
+        verify(codificadorPassword, never()).encode(anyString());
         verify(empleadoRepository, never()).save(any(Empleado.class));
     }
 }
