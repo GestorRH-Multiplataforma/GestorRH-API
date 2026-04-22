@@ -1,10 +1,13 @@
 package com.gestorrh.api.security;
 
+import io.jsonwebtoken.ExpiredJwtException;
+import io.jsonwebtoken.JwtException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.lang.NonNull;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.GrantedAuthority;
@@ -24,8 +27,12 @@ import java.util.List;
  * Este filtro se ejecuta una vez por cada solicitud (extiende de {@link OncePerRequestFilter})
  * para validar la presencia y validez de un token JWT en el encabezado {@code Authorization}.
  * Si el token es válido, establece la autenticación del usuario en el {@link SecurityContextHolder}.
+ * Si el token está caducado, malformado o es inválido, el contexto queda sin autenticación y
+ * Spring Security delega la respuesta en el {@code AuthenticationEntryPoint} configurado,
+ * devolviendo 401 en lugar de 403.
  * </p>
  */
+@Slf4j
 @Component
 @RequiredArgsConstructor
 public class FiltroJwt extends OncePerRequestFilter {
@@ -37,14 +44,6 @@ public class FiltroJwt extends OncePerRequestFilter {
 
     /**
      * Realiza el filtrado interno de la petición para gestionar la seguridad basada en JWT.
-     * <p>
-     * El proceso sigue estos pasos:
-     * 1. Verifica si existe un encabezado 'Authorization' con el prefijo 'Bearer '.
-     * 2. Extrae el token JWT del encabezado.
-     * 3. Valida el token y extrae el correo del usuario y su rol.
-     * 4. Si el usuario no está ya autenticado, establece el contexto de seguridad con las autoridades correspondientes.
-     * 5. Continúa con la cadena de filtros.
-     * </p>
      *
      * @param peticion La solicitud HTTP recibida.
      * @param respuesta La respuesta HTTP que se enviará.
@@ -59,38 +58,41 @@ public class FiltroJwt extends OncePerRequestFilter {
             @NonNull FilterChain cadenaFiltros) throws ServletException, IOException {
 
         final String encabezadoAutenticacion = peticion.getHeader("Authorization");
-        final String jwt;
-        final String correoUsuario;
 
         if (encabezadoAutenticacion == null || !encabezadoAutenticacion.startsWith("Bearer ")) {
             cadenaFiltros.doFilter(peticion, respuesta);
             return;
         }
 
-        jwt = encabezadoAutenticacion.substring(7);
+        final String jwt = encabezadoAutenticacion.substring(7);
 
         try {
-            correoUsuario = servicioJwt.extraerEmail(jwt);
+            String correoUsuario = servicioJwt.extraerEmail(jwt);
             String rolToken = servicioJwt.extraerRol(jwt);
 
             if (correoUsuario != null && SecurityContextHolder.getContext().getAuthentication() == null) {
+                List<GrantedAuthority> autoridades = Collections.singletonList(
+                        new SimpleGrantedAuthority("ROLE_" + rolToken)
+                );
+                UsernamePasswordAuthenticationToken tokenAutenticacion = new UsernamePasswordAuthenticationToken(
+                        correoUsuario,
+                        null,
+                        autoridades
+                );
+                tokenAutenticacion.setDetails(new WebAuthenticationDetailsSource().buildDetails(peticion));
 
-                if (servicioJwt.esTokenValido(jwt)) {
-                    List<GrantedAuthority> autoridades = Collections.singletonList(
-                            new SimpleGrantedAuthority("ROLE_" + rolToken)
-                    );
-                    UsernamePasswordAuthenticationToken tokenAutenticacion = new UsernamePasswordAuthenticationToken(
-                            correoUsuario,
-                            null,
-                            autoridades
-                    );
-                    tokenAutenticacion.setDetails(new WebAuthenticationDetailsSource().buildDetails(peticion));
-
-                    SecurityContextHolder.getContext().setAuthentication(tokenAutenticacion);
-                }
+                SecurityContextHolder.getContext().setAuthentication(tokenAutenticacion);
             }
-        } catch (Exception e) {
-            System.err.println("Error procesando el JWT: " + e.getMessage());
+        } catch (ExpiredJwtException e) {
+            // El token es sintácticamente válido pero está caducado.
+            // Se marca la petición para que el AuthenticationEntryPoint responda 401.
+            log.debug("Token JWT caducado: {}", e.getMessage());
+            SecurityContextHolder.clearContext();
+            peticion.setAttribute("jwt_expired", true);
+        } catch (JwtException | IllegalArgumentException e) {
+            // Token malformado, firma inválida o claim incorrecto: tampoco se autentica.
+            log.debug("Error al validar el token JWT: {}", e.getMessage());
+            SecurityContextHolder.clearContext();
         }
 
         cadenaFiltros.doFilter(peticion, respuesta);

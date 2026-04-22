@@ -1,9 +1,13 @@
 package com.gestorrh.api.config;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.gestorrh.api.dto.error.RespuestaErrorDTO;
 import com.gestorrh.api.security.FiltroJwt;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.MediaType;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -11,8 +15,12 @@ import org.springframework.security.config.annotation.web.configurers.AbstractHt
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.access.AccessDeniedHandler;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+
+import java.time.LocalDateTime;
 
 /**
  * Clase de configuración global de seguridad de Spring Security.
@@ -32,11 +40,11 @@ public class ConfigSeguridad {
      */
     private final FiltroJwt filtroJwt;
 
+    private final ObjectMapper objectMapper = new ObjectMapper()
+            .findAndRegisterModules();
+
     /**
      * Define el bean para el codificador de contraseñas de la aplicación.
-     * <p>
-     * Utiliza el algoritmo {@link BCryptPasswordEncoder} para realizar el hashing seguro de las contraseñas.
-     * </p>
      *
      * @return Una instancia de {@link PasswordEncoder}.
      */
@@ -46,16 +54,61 @@ public class ConfigSeguridad {
     }
 
     /**
-     * Configura la cadena de filtros de seguridad (Security Filter Chain).
+     * Entry point que responde con 401 Unauthorized en formato JSON cuando la petición
+     * llega sin autenticación válida (token ausente, caducado o malformado).
      * <p>
-     * Define las siguientes reglas:
+     * Esto resuelve la incoherencia por la que Spring Security devolvía 403 al no encontrar
+     * usuario autenticado, rompiendo el flujo de reautenticación del cliente Android, que
+     * espera 401 para detectar tokens caducados.
      * </p>
-     * <ol>
-     *   <li>Deshabilitar CSRF al ser una API stateless.</li>
-     *   <li>Política de creación de sesiones STATELESS (sin sesión en servidor).</li>
-     *   <li>Permisos de acceso: rutas públicas para autenticación, registro y errores, el resto requiere autenticación.</li>
-     *   <li>Añadir el filtro {@link FiltroJwt} antes del filtro estándar de autenticación de Spring.</li>
-     * </ol>
+     */
+    @Bean
+    public AuthenticationEntryPoint puntoEntradaAutenticacion() {
+        return (request, response, authException) -> {
+            boolean tokenCaducado = Boolean.TRUE.equals(request.getAttribute("jwt_expired"));
+            String mensaje = tokenCaducado
+                    ? "Token JWT caducado"
+                    : "No autenticado: token ausente o inválido";
+
+            RespuestaErrorDTO error = RespuestaErrorDTO.builder()
+                    .timestamp(LocalDateTime.now())
+                    .status(HttpServletResponse.SC_UNAUTHORIZED)
+                    .errorCode(tokenCaducado ? "TOKEN_EXPIRADO" : "NO_AUTENTICADO")
+                    .message(mensaje)
+                    .path(request.getRequestURI())
+                    .build();
+
+            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+            response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+            response.setCharacterEncoding("UTF-8");
+            response.getWriter().write(objectMapper.writeValueAsString(error));
+        };
+    }
+
+    /**
+     * Handler que responde con 403 Forbidden en formato JSON cuando el usuario está
+     * autenticado pero carece de los permisos necesarios para acceder al recurso.
+     */
+    @Bean
+    public AccessDeniedHandler manejadorAccesoDenegado() {
+        return (request, response, accessDeniedException) -> {
+            RespuestaErrorDTO error = RespuestaErrorDTO.builder()
+                    .timestamp(LocalDateTime.now())
+                    .status(HttpServletResponse.SC_FORBIDDEN)
+                    .errorCode("ACCESO_DENEGADO")
+                    .message("No tiene permisos para acceder a este recurso")
+                    .path(request.getRequestURI())
+                    .build();
+
+            response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+            response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+            response.setCharacterEncoding("UTF-8");
+            response.getWriter().write(objectMapper.writeValueAsString(error));
+        };
+    }
+
+    /**
+     * Configura la cadena de filtros de seguridad (Security Filter Chain).
      *
      * @param http El objeto {@link HttpSecurity} para configurar la seguridad web.
      * @return La cadena de filtros configurada.
@@ -70,6 +123,10 @@ public class ConfigSeguridad {
                         .requestMatchers("/auth/**", "/error", "/api/empresas/registro").permitAll()
                         .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
                         .anyRequest().authenticated()
+                )
+                .exceptionHandling(ex -> ex
+                        .authenticationEntryPoint(puntoEntradaAutenticacion())
+                        .accessDeniedHandler(manejadorAccesoDenegado())
                 )
                 .addFilterBefore(filtroJwt, UsernamePasswordAuthenticationFilter.class);
 
