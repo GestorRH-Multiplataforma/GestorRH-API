@@ -57,6 +57,15 @@ public class FiltroJwt extends OncePerRequestFilter {
             @NonNull HttpServletResponse respuesta,
             @NonNull FilterChain cadenaFiltros) throws ServletException, IOException {
 
+        // Las rutas públicas no se procesan por el filtro JWT: evita que un
+        // token obsoleto o malformado en el encabezado bloquee el login o el
+        // registro de empresa.
+        final String ruta = peticion.getRequestURI();
+        if (esRutaPublica(ruta)) {
+            cadenaFiltros.doFilter(peticion, respuesta);
+            return;
+        }
+
         final String encabezadoAutenticacion = peticion.getHeader("Authorization");
 
         if (encabezadoAutenticacion == null || !encabezadoAutenticacion.startsWith("Bearer ")) {
@@ -96,5 +105,24 @@ public class FiltroJwt extends OncePerRequestFilter {
         }
 
         cadenaFiltros.doFilter(peticion, respuesta);
+    }
+
+    /**
+     * Determina si la ruta solicitada corresponde a un endpoint público
+     * que no requiere validación de JWT (autenticación, registro, documentación).
+     *
+     * @param ruta la URI de la petición.
+     * @return {@code true} si la ruta es pública y debe saltarse el filtro.
+     */
+    private boolean esRutaPublica(String ruta) {
+        if (ruta == null) {
+            return false;
+        }
+        return ruta.startsWith("/auth/")
+                || ruta.equals("/api/empresas/registro")
+                || ruta.equals("/error")
+                || ruta.startsWith("/v3/api-docs")
+                || ruta.startsWith("/swagger-ui")
+                || ruta.equals("/swagger-ui.html");
     }
 }
