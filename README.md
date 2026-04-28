@@ -1,7 +1,7 @@
 # GestorRH - API REST
  
 [![CI Pipeline](https://github.com/GestorRH-Multiplataforma/GestorRH-API/actions/workflows/ci.yml/badge.svg)](https://github.com/GestorRH-Multiplataforma/GestorRH-API/actions/workflows/ci.yml)
-[![Version](https://img.shields.io/badge/version-v1.1.0--stable-brightgreen)](https://github.com/GestorRH-Multiplataforma/GestorRH-API/releases/tag/v1.1.0)
+[![Version](https://img.shields.io/badge/version-v1.1.2--stable-brightgreen)](https://github.com/GestorRH-Multiplataforma/GestorRH-API/releases/tag/v1.1.2)
 [![Java](https://img.shields.io/badge/Java-21-orange?logo=openjdk)](https://openjdk.org/projects/jdk/21/)
 [![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3-6DB33F?logo=springboot&logoColor=white)](https://spring.io/projects/spring-boot)
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue)](LICENSE)
@@ -184,8 +184,10 @@ La estrategia de versionado sigue **Semantic Versioning** (`MAJOR.MINOR.PATCH`):
   Versión de referencia para integración con clientes y futuros despliegues, con la arquitectura base consolidada, preparación para producción y licencia aplicada.
 - **`v1.0.1`** → versión estable actual. *(latest)*
   Parche sobre v1.0.0 con correcciones compatibles sin ruptura del contrato de la API.
-- **`v1.1.0`** → nuevas funcionalidades y pipeline CD. *(latest)*
+- **`v1.1.0`** → nuevas funcionalidades y pipeline CD. 
     Reset de contraseña por RRHH, filtros en fichajes, BFF dashboard móvil y despliegue automático en Oracle Cloud.
+- **`v1.1.2`** → parche de seguridad en el filtro JWT. *(latest)*
+    Corrección crítica que excluye correctamente las rutas públicas del filtro de autenticación JWT, resolviendo el bloqueo en el login.
 ### Criterio de uso
  
 Para integración con clientes y despliegue, la referencia será siempre la **última versión estable aprobada**, no necesariamente el último commit de la rama `main`.
