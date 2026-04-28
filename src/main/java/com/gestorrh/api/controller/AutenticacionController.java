@@ -25,7 +25,7 @@ import org.springframework.web.bind.annotation.RestController;
  *
  */
 @RestController
-@RequestMapping("/auth")
+@RequestMapping("/api/auth")
 @RequiredArgsConstructor
 @Tag(name = "1. Autenticación", description = "Endpoints públicos para iniciar sesión y obtener los tokens JWT de acceso.")
 public class AutenticacionController {
