@@ -57,9 +57,6 @@ public class FiltroJwt extends OncePerRequestFilter {
             @NonNull HttpServletResponse respuesta,
             @NonNull FilterChain cadenaFiltros) throws ServletException, IOException {
 
-        // Las rutas públicas no se procesan por el filtro JWT: evita que un
-        // token obsoleto o malformado en el encabezado bloquee el login o el
-        // registro de empresa.
         final String ruta = peticion.getRequestURI();
         if (esRutaPublica(ruta)) {
             cadenaFiltros.doFilter(peticion, respuesta);
@@ -93,13 +90,10 @@ public class FiltroJwt extends OncePerRequestFilter {
                 SecurityContextHolder.getContext().setAuthentication(tokenAutenticacion);
             }
         } catch (ExpiredJwtException e) {
-            // El token es sintácticamente válido pero está caducado.
-            // Se marca la petición para que el AuthenticationEntryPoint responda 401.
             log.debug("Token JWT caducado: {}", e.getMessage());
             SecurityContextHolder.clearContext();
             peticion.setAttribute("jwt_expired", true);
         } catch (JwtException | IllegalArgumentException e) {
-            // Token malformado, firma inválida o claim incorrecto: tampoco se autentica.
             log.debug("Error al validar el token JWT: {}", e.getMessage());
             SecurityContextHolder.clearContext();
         }
@@ -119,6 +113,7 @@ public class FiltroJwt extends OncePerRequestFilter {
             return false;
         }
         return ruta.startsWith("/auth/")
+                || ruta.startsWith("/api/auth/")
                 || ruta.equals("/api/empresas/registro")
                 || ruta.equals("/error")
                 || ruta.startsWith("/v3/api-docs")

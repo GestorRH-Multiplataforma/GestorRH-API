@@ -120,7 +120,7 @@ public class ConfigSeguridad {
                 .csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/auth/**", "/error", "/api/empresas/registro").permitAll()
+                        .requestMatchers("/auth/**", "/api/auth/**", "/error", "/api/empresas/registro").permitAll()
                         .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
                         .requestMatchers("/api/v3/api-docs/**", "/api/swagger-ui/**", "/api/swagger-ui.html").permitAll()
                         .anyRequest().authenticated()
