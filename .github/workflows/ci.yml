@@ -109,7 +109,7 @@ jobs:
             docker pull ghcr.io/gestorrh-multiplataforma/gestorrh-api:latest
 
             echo "Reiniciando servicios..."
-            docker compose -f docker-compose.prod.yml up -d --no-build
+            docker compose -f docker-compose.prod.yml up -d --no-build --force-recreate
 
             echo "Limpiando imágenes antiguas..."
             docker image prune -f
